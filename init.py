@@ -5,8 +5,8 @@ def create_app():
 
     @app.route('/')
     def index():
-        # Renders the template located at templates/signinsignup.html.jinja
-        return render_template('signinsignup.html.jinja')
+        # Renders the template located at templates/index.html.jinja
+        return render_template('index.html.jinja')
 
     return app
 
