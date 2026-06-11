@@ -1,117 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Rosmini College - Calendar</title>
+  <meta charset="UTF-8">
+  <title>Events Feed</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
-<!-- NAVBAR (stays on every page) -->
-  <nav class="navbar">
-      <div class="logo">
-            My Website
-      </div>
 
-      <ul class="nav-links">
-          <li><a href="/">Home</a></li>
-          <li><a href="/calendar">Events</a></li>
-          <li><a href="/profile">Profile</a></li>
-      </ul>
-    </nav>
-  <header class="nav">
-    <div class="nav-left">
-      <div class="logo">[Shield]</div>
-      <span class="site-title">ROSMINI COLLEGE</span>
-    </div>
-    <nav class="nav-links">
-      <a href="#">Home</a>
-      <a href="#">About Rosmini</a>
-      <a href="#">Life at Rosmini</a>
-      <a href="#">Academic</a>
-      <a href="#">Community</a>
-      <a href="#" class="active">Calendar</a>
-    </nav>
-  </header>
+<!-- Top Navbar -->
+<div class="navbar">
+  <h2>Events</h2>
+</div>
 
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Calendar & Coming Events</h1>
-      <p>Stay up to date with academic, cultural, and sporting events at Rosmini College.</p>
-      <button class="btn-primary">Download Term Planner (PDF)</button>
-    </div>
-  </section>
+<!-- Feed -->
+<div class="feed">
 
-  <section class="calendar-page">
-    <div class="month-bar">
-      <h2>June 2026</h2>
-      <div class="month-controls">
-        <button>&lsaquo; Previous</button>
-        <button>Today</button>
-        <button>Next &rsaquo;</button>
-        <div class="view-toggle">
-          <button class="active">Month</button>
-          <button>Week</button>
-          <button>List</button>
-        </div>
-      </div>
+  {% for event in events %}
+  <div class="post">
+
+    <!-- Post Header -->
+    <div class="post-header">
+      <h3>{{ event['name'] }}</h3>
+
+      <span class="badge {% if not event['house_points'] %}off{% endif %}">
+        {% if event['house_points'] %}
+          House Points
+        {% else %}
+          No House Points
+        {% endif %}
+      </span>
     </div>
 
-    <div class="filters">
-      <span>Filter by:</span>
-      <button class="pill active">All</button>
-      <button class="pill">Academic</button>
-      <button class="pill">Sport</button>
-      <button class="pill">Cultural</button>
-      <button class="pill">Service</button>
+    <!-- Image -->
+    {% if event['image'] %}
+      <img 
+        src="{{ url_for('static', filename='uploads/' + event['image']) }}" 
+        class="post-image"
+      >
+    {% else %}
+      <div class="post-image placeholder"></div>
+    {% endif %}
+
+    <!-- Body -->
+    <div class="post-body">
+      <p class="time">
+        📅 {{ event['event_date'] }} • ⏰ {{ event['event_time'] }}
+      </p>
     </div>
 
-    <div class="layout">
-      <div class="calendar-card">
-        <!-- calendar grid would be generated with JS -->
-        <div class="calendar-grid">
-          <div class="day-header">Mon</div>
-          <div class="day-header">Tue</div>
-          <div class="day-header">Wed</div>
-          <div class="day-header">Thu</div>
-          <div class="day-header">Fri</div>
-          <div class="day-header">Sat</div>
-          <div class="day-header">Sun</div>
+  </div>
+  {% endfor %}
 
-          <!-- Example day -->
-          <div class="day today has-event">
-            <span class="date-number">11</span>
-            <div class="event-dot"></div>
-            <div class="event-title">Yr 13 Stats Internal</div>
-          </div>
+</div>
 
-          <!-- more days... -->
-        </div>
-      </div>
-
-      <aside class="events-card">
-        <h3>Upcoming Events</h3>
-
-        <div class="event-item">
-          <span class="event-tag academic">Academic</span>
-          <h4>Senior Exams Begin</h4>
-          <p>Tue 23 June · 9:00am</p>
-          <p class="location">School Hall</p>
-        </div>
-
-        <div class="event-item">
-          <span class="event-tag sport">Sport</span>
-          <h4>First XV vs St Peter's</h4>
-          <p>Sat 27 June · 2:30pm</p>
-          <p class="location">Home Ground</p>
-        </div>
-
-      </aside>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <div>© Rosmini College</div>
-    <div>36 Dominion St, Takapuna · 09 489 5417</div>
-  </footer>
 </body>
 </html>
