@@ -42,7 +42,7 @@ def create_app():
 
     @app.route('/')
     def index():
-        return render_template('signinsignup.html.jinja')
+        return render_template('index.html.jinja')
 
     @app.route('/signup', methods=['POST'])
     def signup():
