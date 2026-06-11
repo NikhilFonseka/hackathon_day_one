@@ -45,11 +45,15 @@ def create_app():
     def index():
         return render_template('index.html.jinja', current_year=datetime.now().year)
 
-    # --- NEW ROUTE FOR PROFILE ---
     @app.route('/profile')
     def profile():
         return render_template('signinsignup.html.jinja')
-    # -----------------------------
+
+    # --- NEW ROUTE FOR CALENDAR ---
+    @app.route('/calendar')
+    def calendar():
+        return render_template('calendar.html.jinja')
+    # ------------------------------
 
     # Placeholder routes for your navbar to prevent 500 errors
     @app.route('/home')
