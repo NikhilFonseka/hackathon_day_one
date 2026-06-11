@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
 import os
+from datetime import datetime
 
 # Set up paths for the database and image uploads
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +43,22 @@ def create_app():
 
     @app.route('/')
     def index():
-        return render_template('index.html.jinja')
+        return render_template('index.html.jinja', current_year=datetime.now().year)
+
+    # --- NEW ROUTE FOR PROFILE ---
+    @app.route('/profile')
+    def profile():
+        return render_template('signinsignup.html.jinja')
+    # -----------------------------
+
+    # Placeholder routes for your navbar to prevent 500 errors
+    @app.route('/home')
+    def home():
+        return "Home Page Coming Soon!"
+
+    @app.route('/events')
+    def events():
+        return "Events Page Coming Soon!"
 
     @app.route('/signup', methods=['POST'])
     def signup():
