@@ -58,7 +58,11 @@ def create_app():
 
     @app.route('/events')
     def events():
-        return "Events Page Coming Soon!"
+        conn = get_db_connection()
+        events = conn.execute('SELECT * FROM Event ORDER BY event_date DESC').fetchall()
+        conn.close()
+
+        return render_template('feed.html', events=events)
 
     @app.route('/signup', methods=['POST'])
     def signup():
