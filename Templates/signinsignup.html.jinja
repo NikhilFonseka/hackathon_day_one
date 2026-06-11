@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal - Sign In & Sign Up</title>
+    <title>Student Portal - Profile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-    <!-- NAVBAR (stays on every page) -->
     <nav class="navbar">
         <div class="logo">
             My Website
@@ -20,54 +19,81 @@
             <li><a href="/profile">Profile</a></li>
         </ul>
     </nav>
+    
     <main>
-        <section>
-            <h2>Student Sign Up</h2>
-            <form action="/signup" method="POST" enctype="multipart/form-data">
+        {% if session.get('user_name') %}
+            
+            <section style="text-align: center;">
+                <h2>Welcome back, {{ session.get('user_name') }}!</h2>
                 
-                <div>
-                    <label for="reg_name">Full Name:</label>
-                    <input type="text" id="reg_name" name="name" required>
-                </div>
-
-                <div>
-                    <label for="reg_email">Email:</label>
-                    <input type="email" id="reg_email" name="email" required>
-                </div>
-
-                <div>
-                    <label for="reg_password">Password:</label>
-                    <input type="password" id="reg_password" name="password" required>
-                </div>
-
-                <div>
-                    <label for="reg_image">Profile Image:</label>
-                    <input type="file" id="reg_image" name="profile_image" accept="image/*" required>
-                </div>
-
-                <button type="submit">Sign Up</button>
-            </form>
-        </section>
-
-        <hr>
-
-        <section>
-            <h2>Student Sign In</h2>
-            <form action="/signin" method="POST">
+                {% if session.get('profile_image') %}
+                    <img src="{{ url_for('static', filename='uploads/' + session.get('profile_image')) }}" 
+                         alt="Profile Picture" 
+                         style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 20px 0;">
+                {% endif %}
                 
-                <div>
-                    <label for="login_email">Email:</label>
-                    <input type="email" id="login_email" name="email" required>
-                </div>
+                <br>
+                <a href="/logout"><button>Log Out</button></a>
+            </section>
 
-                <div>
-                    <label for="login_password">Password:</label>
-                    <input type="password" id="login_password" name="password" required>
-                </div>
+        {% else %}
 
-                <button type="submit">Sign In</button>
-            </form>
-        </section>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <img src="https://www.startpage.com/av/proxy-image?piurl=https%3A%2F%2Fwallpapers.com%2Fimages%2Fhd%2Fvault-boy-thumbs-up-tkzyl91gm2en3962.png&sp=1781144591T764b7821f141c2f4ef54e23a2ac1ebe1711ff3512e2efa23c180fcb49a1c9fda" 
+                     class="vault-mascot" 
+                     alt="Vault-Tec Approved">
+                <p style="font-size: 0.8rem; letter-spacing: 2px; margin-top: 0.5rem;">[VAULT-TEC OS V3.0.1 - READY]</p>
+            </div>
+            
+            <section>
+                <h2>Student Sign Up</h2>
+                <form action="/signup" method="POST" enctype="multipart/form-data">
+                    
+                    <div>
+                        <label for="reg_name">Full Name:</label>
+                        <input type="text" id="reg_name" name="name" required>
+                    </div>
+
+                    <div>
+                        <label for="reg_email">Email:</label>
+                        <input type="email" id="reg_email" name="email" required>
+                    </div>
+
+                    <div>
+                        <label for="reg_password">Password:</label>
+                        <input type="password" id="reg_password" name="password" required>
+                    </div>
+
+                    <div>
+                        <label for="reg_image">Profile Image:</label>
+                        <input type="file" id="reg_image" name="profile_image" accept="image/*" required>
+                    </div>
+
+                    <button type="submit">Sign Up</button>
+                </form>
+            </section>
+
+            <hr>
+
+            <section>
+                <h2>Student Sign In</h2>
+                <form action="/signin" method="POST">
+                    
+                    <div>
+                        <label for="login_email">Email:</label>
+                        <input type="email" id="login_email" name="email" required>
+                    </div>
+
+                    <div>
+                        <label for="login_password">Password:</label>
+                        <input type="password" id="login_password" name="password" required>
+                    </div>
+
+                    <button type="submit">Sign In</button>
+                </form>
+            </section>
+            
+        {% endif %}
     </main>
 
 </body>
