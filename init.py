@@ -42,67 +42,8 @@ def create_app():
 
     @app.route('/')
     def index():
+        # Renders the template located at templates/index.html.jinja
         return render_template('index.html.jinja')
-
-    @app.route('/signup', methods=['POST'])
-    def signup():
-        # 1. Grab data from the HTML form
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        image_file = request.files.get('profile_image')
-
-        # Basic validation
-        if not (name and email and password and image_file):
-            return "Missing required fields.", 400
-
-        # 2. Secure the filename and save the uploaded image
-        filename = secure_filename(image_file.filename)
-        if filename:
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image_file.save(file_path)
-        else:
-            return "Invalid file.", 400
-
-        # 3. Hash the password
-        hashed_password = generate_password_hash(password)
-
-        # 4. Save to the database
-        try:
-            conn = get_db_connection()
-            conn.execute(
-                'INSERT INTO User (name, email, password, profile_image) VALUES (?, ?, ?, ?)',
-                (name, email, hashed_password, filename)
-            )
-            conn.commit()
-            conn.close()
-            return "Sign up successful! Please go back and sign in."
-        
-        except sqlite3.IntegrityError:
-            # Triggered if the email is not UNIQUE
-            return "An account with that email already exists.", 400
-        except Exception as e:
-            return f"An error occurred: {e}", 500
-
-    @app.route('/signin', methods=['POST'])
-    def signin():
-        # 1. Grab data from the HTML form
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        if not (email and password):
-            return "Missing required fields.", 400
-
-        # 2. Look up the user in the database
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM User WHERE email = ?', (email,)).fetchone()
-        conn.close()
-
-        # 3. Verify the user exists AND the password matches the hash
-        if user and check_password_hash(user['password'], password):
-            return f"Welcome back, {user['name']}!"
-        else:
-            return "Invalid email or password.", 401
 
     return app
 
