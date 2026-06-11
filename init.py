@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
@@ -38,6 +38,9 @@ def create_app():
     app = Flask(__name__)
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
     
+    # REQUIRED: A secret key is needed to sign the cookies securely
+    app.secret_key = 'super_secret_hackathon_key' 
+    
     # Initialize database when the app is created
     init_db()
 
@@ -47,13 +50,13 @@ def create_app():
 
     @app.route('/profile')
     def profile():
+        # The Jinja template can now check if session['user_name'] exists 
+        # to decide whether to show the forms or a "Welcome [Name]" message.
         return render_template('signinsignup.html.jinja')
 
-    # --- NEW ROUTE FOR CALENDAR ---
     @app.route('/calendar')
     def calendar():
         return render_template('calendar.html.jinja')
-    # ------------------------------
 
     # Placeholder routes for your navbar to prevent 500 errors
     @app.route('/home')
@@ -90,16 +93,23 @@ def create_app():
         # 4. Save to the database
         try:
             conn = get_db_connection()
-            conn.execute(
+            cursor = conn.cursor()
+            cursor.execute(
                 'INSERT INTO User (name, email, password, profile_image) VALUES (?, ?, ?, ?)',
                 (name, email, hashed_password, filename)
             )
             conn.commit()
+            
+            # 5. Save the new user to the session cookie
+            session['user_id'] = cursor.lastrowid
+            session['user_name'] = name
+            
             conn.close()
-            return "Sign up successful! Please go back and sign in."
+            
+            # 6. Redirect to the profile page
+            return redirect(url_for('profile'))
         
         except sqlite3.IntegrityError:
-            # Triggered if the email is not UNIQUE
             return "An account with that email already exists.", 400
         except Exception as e:
             return f"An error occurred: {e}", 500
@@ -120,9 +130,21 @@ def create_app():
 
         # 3. Verify the user exists AND the password matches the hash
         if user and check_password_hash(user['password'], password):
-            return f"Welcome back, {user['name']}!"
+            
+            # 4. Save the user to the session cookie
+            session['user_id'] = user['id']
+            session['user_name'] = user['name']
+            
+            # 5. Redirect to the profile page
+            return redirect(url_for('profile'))
         else:
             return "Invalid email or password.", 401
+
+    # --- NEW ROUTE TO CLEAR THE COOKIE ---
+    @app.route('/logout')
+    def logout():
+        session.clear()
+        return redirect(url_for('profile'))
 
     return app
 

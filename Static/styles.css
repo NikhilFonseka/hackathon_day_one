@@ -1,4 +1,4 @@
-/* 1. Base Reset & Variables */
+/* 1. Base Reset & Fallout Variables */
 * {
   margin: 0;
   padding: 0;
@@ -6,90 +6,250 @@
 }
 
 :root {
-  --primary-color: #4A90E2; /* A friendly, soft blue */
-  --primary-hover: #357abd;
-  --text-main: #333333;
-  --text-muted: #666666;
-  --bg-color: #f4f7f9;     /* Very light blue/gray background */
-  --card-bg: #ffffff;
-  --font-stack: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Premium Mojave Amber */
+  --primary-color: #ffb642;       
+  --primary-hover: #ffcf75;       
+  --primary-dim: rgba(255, 182, 66, 0.35);
+  --bg-color: #160f05;            
+  --card-bg: #1f1406;             
+  --input-bg: #0d0803;            
+  --font-stack: 'Lucida Console', 'Courier New', Courier, monospace;
 }
 
-/* 2. Body & Global Typography */
+/* 2. Global Terminal & CRT Screen FX */
 body {
   font-family: var(--font-stack);
-  color: var(--text-main);
+  color: var(--primary-color);
   background-color: var(--bg-color);
   line-height: 1.6;
-  padding: 2rem 1rem; /* Adds breathing room on smaller screens */
+  padding: 2rem 1rem;
+  position: relative;
+  overflow-x: hidden;
+  /* Ambient CRT green/amber text-shadow glow */
+  text-shadow: 0 0 4px rgba(255, 182, 66, 0.6);
+  animation: crt-flicker 0.15s infinite;
 }
 
-/* 3. Layout */
-.container {
+/* CRT Scanline Overlay Effect */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 99999;
+  background-size: 100% 4px, 3px 100%;
+  pointer-events: none; /* Allows clicking through the scanlines */
+}
+
+/* 3. Navigation Bar (OS Menu Module) */
+.navbar {
+  max-width: 900px;
+  margin: 0 auto 2rem auto;
+  padding: 1rem;
+  border-bottom: 2px dashed var(--primary-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.3rem;
+  font-weight: bold;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.logo::before {
+  content: "► ";
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+}
+
+.nav-links a {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0.2rem 0.5rem;
+}
+
+.nav-links a:hover {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  text-shadow: none;
+}
+
+/* 4. V.A.T.S. Style Bracket Containers */
+.container, main {
   max-width: 800px;
-  margin: 0 auto; /* Centers the container */
+  margin: 0 auto 3rem auto;
   background: var(--card-bg);
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05); /* Soft drop shadow */
+  padding: 3rem 2.5rem;
+  position: relative;
+  border: 1px solid var(--primary-dim);
+  box-shadow: inset 0 0 30px rgba(255, 182, 66, 0.1);
 }
 
-/* 4. Headings & Paragraphs */
+/* Heavy target brackets on corners using pseudo-elements */
+.container::before, main::before,
+.container::after, main::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--primary-color);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.container::before, main::before {
+  top: -2px; left: -2px;
+  border-width: 4px 0 0 4px; /* Top Left */
+}
+
+.container::after, main::after {
+  bottom: -2px; right: -2px;
+  border-width: 0 4px 4px 0; /* Bottom Right */
+}
+
+/* 5. Headings & Interface Elements */
 h1, h2, h3 {
-  color: #111111;
-  margin-bottom: 1rem;
-  line-height: 1.2;
-  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 1.5rem;
+}
+
+h2::before {
+  content: "> ";
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  background: dashed var(--primary-color);
+  border-top: 1px dashed var(--primary-color);
+  margin: 2.5rem 0;
 }
 
 p {
   margin-bottom: 1.5rem;
-  color: var(--text-muted);
+  letter-spacing: 1px;
 }
 
-/* 5. Links */
-a {
+/* 6. Form Terminals */
+form div {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"] {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--primary-color);
   color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease-in-out;
+  font-family: var(--font-stack);
+  font-size: 1rem;
+  outline: none;
 }
 
-a:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
+input:focus {
+  background-color: #261908;
+  box-shadow: 0 0 10px rgba(255, 182, 66, 0.4);
 }
 
-/* 6. Buttons */
+/* 7. Action Execution Buttons */
 button, .btn {
   display: inline-block;
-  background-color: var(--primary-color);
-  color: #ffffff;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 0.75rem 2.5rem;
+  font-family: var(--font-stack);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: bold;
+  text-transform: uppercase;
   cursor: pointer;
-  text-align: center;
-  transition: background-color 0.2s ease-in-out, transform 0.1s;
+  letter-spacing: 2px;
+  position: relative;
 }
 
 button:hover, .btn:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  box-shadow: 0 0 15px var(--primary-color);
+  text-shadow: none;
 }
 
 button:active, .btn:active {
-  transform: scale(0.98); /* Satisfying click effect */
+  transform: translateY(1px);
 }
 
-/* 7. Responsive adjustments for mobile */
+/* 8. Target Lock Profile Picture Frame */
+img {
+  border: 2px solid var(--primary-color) !important;
+  border-radius: 0 !important; /* Absolute squares only in the wasteland */
+  background-color: var(--input-bg);
+  padding: 5px;
+  box-shadow: 0 0 15px rgba(255, 182, 66, 0.4);
+}
+
+/* 9. System Footer Module */
+.footer {
+  max-width: 900px;
+  margin: 3rem auto 0 auto;
+  padding: 1.5rem;
+  border-top: 2px dashed var(--primary-dim);
+  text-align: center;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* 10. Hardware Keyframes (Animations) */
+@keyframes crt-flicker {
+  0% { opacity: 0.995; }
+  50% { opacity: 1; }
+  100% { opacity: 0.992; }
+}
+
+/* 11. Responsive Terminals */
 @media (max-width: 600px) {
-  .container {
-    padding: 1.5rem;
+  .container, main {
+    padding: 2rem 1.5rem;
   }
-  
-  body {
-    padding: 1rem;
+  .navbar {
+    flex-direction: column;
+    gap: 1.5rem;
   }
+}
+
+/* 12. Vault-Tec Mascot Processing Module */
+.vault-mascot {
+  max-width: 150px;
+  height: auto;
+  display: inline-block;
+  margin: 0 auto;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  /* Monochromatic Amber Terminal Filter */
+  filter: sepia(100%) hue-rotate(5deg) saturate(400%) brightness(0.9);
+  opacity: 0.85;
 }
