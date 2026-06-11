@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}My Website{% endblock %}</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+
+    <!-- NAVBAR (stays on every page) -->
+    <nav class="navbar">
+        <div class="logo">
+            My Website
+        </div>
+
+        <ul class="nav-links">
+            <li><a href="">Home</a></li>
+            <li><a href="">Events</a></li>
+            <li><a href="/profile">Profile</a></li>
+        </ul>
+    </nav>
+
+    <!-- MAIN PAGE CONTENT (changes per page) -->
+    <main class="container">
+        {% block content %}
+        <!-- page-specific content goes here -->
+        {% endblock %}
+    </main>
+
+    <!-- FOOTER (stays on every page) -->
+    <footer class="footer">
+        <p>© {{ current_year }} My Website</p>
+    </footer>
+
+</body>
+</html>
