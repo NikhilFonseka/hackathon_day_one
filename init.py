@@ -65,9 +65,80 @@ def create_app():
 
     @app.route('/profile')
     def profile():
-        # The Jinja template can now check if session['user_name'] exists 
-        # to decide whether to show the forms or a "Welcome [Name]" message.
-        return render_template('signinsignup.html.jinja')
+        # 1. If the user is NOT signed in, just show the login/signup forms safely
+        if 'user_id' not in session:
+            # We don't query the database, we just serve the raw template
+            return render_template('signinsignup.html.jinja')
+
+        # 2. If the user IS signed in, proceed with fetching their network data
+        user_id = session['user_id']
+        conn = get_db_connection()
+
+        pending_reqs = conn.execute('''
+            SELECT f.interactionid, u.name as sender_name
+            FROM friendreqs f
+            JOIN User u ON f.sendinguser = u.id
+            WHERE f.recievinguser = ? AND f.accepted_rejected_waiting = 'waiting'
+        ''', (user_id,)).fetchall()
+
+        friends = conn.execute('''
+            SELECT u.name
+            FROM friendreqs f
+            JOIN User u ON (u.id = f.sendinguser OR u.id = f.recievinguser)
+            WHERE (f.sendinguser = ? OR f.recievinguser = ?)
+              AND f.accepted_rejected_waiting = 'accepted'
+              AND u.id != ?
+        ''', (user_id, user_id, user_id)).fetchall()
+        
+        conn.close()
+
+        # Render the profile interface with the datalink info
+        return render_template('signinsignup.html.jinja', pending_reqs=pending_reqs, friends=friends)
+
+    
+    @app.route('/send_request', methods=['POST'])
+    def send_request():
+        if 'user_id' not in session:
+            return redirect('/')
+            
+        target_email = request.form.get('friend_email')
+        sender_id = session['user_id']
+
+        conn = get_db_connection()
+        # Find the target user by their email
+        target_user = conn.execute('SELECT id FROM User WHERE email = ?', (target_email,)).fetchone()
+
+        # Ensure target exists and user isn't adding themselves
+        if target_user and target_user['id'] != sender_id:
+            conn.execute('''
+                INSERT INTO friendreqs (sendinguser, recievinguser, accepted_rejected_waiting)
+                VALUES (?, ?, 'waiting')
+            ''', (sender_id, target_user['id']))
+            conn.commit()
+            
+        conn.close()
+        return redirect('/profile')
+
+
+    @app.route('/handle_request/<int:interactionid>', methods=['POST'])
+    def handle_request(interactionid):
+        if 'user_id' not in session:
+            return redirect('/')
+            
+        action = request.form.get('action') # Will be 'accepted' or 'rejected'
+
+        if action in ['accepted', 'rejected']:
+            conn = get_db_connection()
+            # Verify the current user is the one receiving the request before updating!
+            conn.execute('''
+                UPDATE friendreqs
+                SET accepted_rejected_waiting = ?
+                WHERE interactionid = ? AND recievinguser = ?
+            ''', (action, interactionid, session['user_id']))
+            conn.commit()
+            conn.close()
+
+        return redirect('/profile')
 
     # Placeholder routes for your navbar to prevent 500 errors
     @app.route('/home')
@@ -77,18 +148,85 @@ def create_app():
     # Ensure this route matches the href="/calendar" in your navbar
     @app.route('/calendar')
     def calendar():
-        # 1. Establish secure connection to the database
         conn = get_db_connection()
         
-        # 2. Query the Event table, sorting by date and time
-        # This returns a list of row objects that Jinja can read like dictionaries
+        # 1. Fetch all events
         events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
         
-        # 3. Terminate connection
+        # 2. Check which events the current user is already tracking
+        interested_ids = []
+        if 'user_id' in session:
+            user_id = session['user_id']
+            # Remember: we are querying the 'password' column based on your schema!
+            rows = conn.execute('SELECT event_id FROM Selected_Event WHERE password = ?', (str(user_id),)).fetchall()
+            interested_ids = [row['event_id'] for row in rows]
+            
         conn.close()
         
-        # 4. Transmit live data to the terminal interface
-        return render_template('calendar.html.jinja', events=events)
+        # 3. Transmit both the events and the user's tracking list to the template
+        return render_template('calendar.html.jinja', events=events, interested_ids=interested_ids)
+    
+    @app.route('/upload', methods=['GET', 'POST'])
+    def upload():
+        # (Optional) Restrict access to logged-in users
+        # if not session.get('user_name'):
+        #     return redirect(url_for('profile'))
+
+        if request.method == 'POST':
+            # 1. Grab data from the terminal form
+            name = request.form.get('name')
+            house_points = int(request.form.get('house_points', 0))
+            event_date = request.form.get('event_date')
+            event_time = request.form.get('event_time')
+            image_file = request.files.get('image')
+
+            # 2. Handle optional image upload
+            filename = None
+            if image_file and image_file.filename != '':
+                filename = secure_filename(image_file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                image_file.save(file_path)
+
+            # 3. Inject into the Event databank
+            conn = get_db_connection()
+            conn.execute('''
+                INSERT INTO Event (name, house_points, event_date, event_time, image) 
+                VALUES (?, ?, ?, ?, ?)
+            ''', (name, house_points, event_date, event_time, filename))
+            conn.commit()
+            conn.close()
+
+            # 4. Route back to the feed to see the new tile
+            return redirect(url_for('calendar'))
+
+        # If it's a GET request, just show the form
+        return render_template('upload.html.jinja')
+    
+    @app.route('/interested/<int:event_id>', methods=['POST'])
+    def mark_interested(event_id):
+        # 1. Check if the user is actually logged in
+        if 'user_id' not in session:
+            # If not logged in, you could redirect to a login page. 
+            # For now, we'll just send them back to the calendar.
+            return redirect(url_for('calendar'))
+        
+        user_id = session['user_id']
+        
+        # 2. Connect to the databanks
+        conn = get_db_connection()
+        
+        # 3. Log the interaction into Selected_Event
+        # NOTE: We are inserting the user_id into your 'password' column based on your schema!
+        conn.execute('''
+            INSERT INTO Selected_Event (event_id, password)
+            VALUES (?, ?)
+        ''', (event_id, str(user_id)))
+        
+        conn.commit()
+        conn.close()
+        
+        # 4. Refresh the terminal feed
+        return redirect(url_for('calendar'))
 
     @app.route('/signup', methods=['POST'])
     def signup():

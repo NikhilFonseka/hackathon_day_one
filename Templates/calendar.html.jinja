@@ -9,11 +9,13 @@
 <body>
 
     <nav class="navbar">
-        <div class="logo">My Website</div>
+        <div class="logo">ROBCO OS v3.0</div>
+
         <ul class="nav-links">
-            <li><a href="/">Home</a></li>
-            <li><a href="/calendar">Events</a></li>
-            <li><a href="/profile">Profile</a></li>
+            <li><a href="/">HOME</a></li>
+            <li><a href="/calendar">EVENTS</a></li>
+            <li><a href="/upload">UPLOAD</a></li>
+            <li><a href="/profile">PROFILE</a></li>
         </ul>
     </nav>
 
@@ -47,6 +49,25 @@
                         DATE: {{ event['event_date'] }} <br>
                         TIME: {{ event['event_time'] }}
                     </p>
+                    
+                    <div style="margin-top: 1rem;">
+                        {% if session.get('user_id') %}
+                            {% if event['event_id'] in interested_ids %}
+                                <button disabled style="width: 100%; padding: 0.5rem; font-size: 0.85rem; border-color: var(--primary-dim); color: var(--primary-dim); cursor: not-allowed;">
+                                    [ ALREADY TRACKING ]
+                                </button>
+                            {% else %}
+                                <form action="/interested/{{ event['event_id'] }}" method="POST">
+                                    <button type="submit" style="width: 100%; padding: 0.5rem; font-size: 0.85rem;">
+                                        [ MARK INTERESTED ]
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <p style="font-size: 0.8rem; color: var(--primary-dim); text-align: center;">[ LOG IN TO TRACK EVENTS ]</p>
+                        {% endif %}
+                    </div>
+
                 </div>
 
             </div>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Event - RobCo Terminal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="logo">ROBCO OS v3.0</div>
+
+        <ul class="nav-links">
+            <li><a href="/">HOME</a></li>
+            <li><a href="/calendar">EVENTS</a></li>
+            <li><a href="/upload">UPLOAD</a></li>
+            <li><a href="/profile">PROFILE</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <h2>[AUTHORIZE NEW EVENT UPLOAD]</h2>
+        
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            
+            <div>
+                <label for="event_name">Event Designation (Name):</label>
+                <input type="text" id="event_name" name="name" required>
+            </div>
+
+            <div>
+                <label for="house_points">House Points Authorized?</label>
+                <select id="house_points" name="house_points">
+                    <option value="1">YES [+ POINTS]</option>
+                    <option value="0">NO [- NO POINTS]</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="event_date">Log Date:</label>
+                <input type="date" id="event_date" name="event_date" required>
+            </div>
+
+            <div>
+                <label for="event_time">Log Time:</label>
+                <input type="time" id="event_time" name="event_time" required>
+            </div>
+
+            <div>
+                <label for="event_image">Attach Visual Data (Optional):</label>
+                <input type="file" id="event_image" name="image" accept="image/*">
+            </div>
+
+            <button type="submit">TRANSMIT DATA</button>
+        </form>
+    </main>
+
+</body>
+</html>

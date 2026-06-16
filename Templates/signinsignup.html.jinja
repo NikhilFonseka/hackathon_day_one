@@ -9,14 +9,13 @@
 <body>
 
     <nav class="navbar">
-        <div class="logo">
-            My Website
-        </div>
+        <div class="logo">ROBCO OS v3.0</div>
 
         <ul class="nav-links">
-            <li><a href="/">Home</a></li>
-            <li><a href="/calendar">Events</a></li>
-            <li><a href="/profile">Profile</a></li>
+            <li><a href="/">HOME</a></li>
+            <li><a href="/calendar">EVENTS</a></li>
+            <li><a href="/upload">UPLOAD</a></li>
+            <li><a href="/profile">PROFILE</a></li>
         </ul>
     </nav>
     
@@ -33,6 +32,52 @@
                 {% endif %}
                 
                 <br>
+                <hr>
+                
+                <section style="text-align: left; margin-bottom: 2rem;">
+                    <h2>[ ESTABLISHED ALLIES ]</h2>
+                    <ul>
+                        {% for friend in friends %}
+                            <li>> {{ friend['name'] }} [STATUS: ONLINE]</li>
+                        {% else %}
+                            <li>[ NO ALLIES FOUND IN LOCAL NETWORK ]</li>
+                        {% endfor %}
+                    </ul>
+                </section>
+
+                <section style="text-align: left; margin-bottom: 2rem;">
+                    <h2>[ PENDING UPLINK REQUESTS ]</h2>
+                    {% for req in pending_reqs %}
+                        <div style="border: 1px dashed var(--primary-dim); padding: 1rem; margin-bottom: 1rem;">
+                            <p>INCOMING TRANSMISSION FROM: <strong>{{ req['sender_name'] }}</strong></p>
+                            
+                            <form action="/handle_request/{{ req['interactionid'] }}" method="POST" style="display: inline-block;">
+                                <input type="hidden" name="action" value="accepted">
+                                <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.8rem;">[ ACCEPT ]</button>
+                            </form>
+                            
+                            <form action="/handle_request/{{ req['interactionid'] }}" method="POST" style="display: inline-block;">
+                                <input type="hidden" name="action" value="rejected">
+                                <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.8rem; border-color: #8B0000; color: #8B0000;">[ REJECT ]</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p>[ NO INCOMING TRANSMISSIONS ]</p>
+                    {% endfor %}
+                </section>
+
+                <section style="text-align: left; margin-bottom: 2rem;">
+                    <h2>[ INITIATE NEW CONNECTION ]</h2>
+                    <form action="/send_request" method="POST">
+                        <div>
+                            <label for="friend_email">TARGET COURIER EMAIL:</label>
+                            <input type="email" id="friend_email" name="friend_email" required placeholder="user@robco.net">
+                        </div>
+                        <button type="submit" style="width: 100%;">[ TRANSMIT FRIEND REQUEST ]</button>
+                    </form>
+                </section>
+                
+                <hr>
                 <a href="/logout"><button>Log Out</button></a>
             </section>
 

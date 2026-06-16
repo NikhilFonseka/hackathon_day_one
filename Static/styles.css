@@ -318,3 +318,51 @@ img {
   font-size: 0.85rem;
   margin-bottom: 0;
 }
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"],
+input[type="date"],
+input[type="time"],
+select {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  font-family: var(--font-stack);
+  font-size: 1rem;
+  outline: none;
+  /* Ensure dropdown arrows match terminal style on modern browsers */
+  appearance: none; 
+}
+
+/* Custom dropdown arrow for select elements */
+select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--primary-color) 50%), 
+                    linear-gradient(135deg, var(--primary-color) 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* Ensure calendar/clock icons inside date/time pickers turn amber */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(72%) sepia(85%) saturate(394%) hue-rotate(344deg) brightness(101%) contrast(102%);
+    cursor: pointer;
+}
+
+/* 14. Network Allies List */
+ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+li {
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+  letter-spacing: 1px;
+}
