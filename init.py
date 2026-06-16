@@ -4,6 +4,13 @@ from werkzeug.utils import secure_filename
 import sqlite3
 import os
 from datetime import datetime
+import google.generativeai as genai
+import json
+import os
+
+# Configure the AI uplink (Replace with your actual Gemini API Key)
+# In a real wasteland, you'd hide this in an environment variable!
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
 
 # Set up paths for the database and image uploads
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -149,22 +156,77 @@ def create_app():
     @app.route('/calendar')
     def calendar():
         conn = get_db_connection()
-        
-        # 1. Fetch all events
         events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
         
-        # 2. Check which events the current user is already tracking
         interested_ids = []
+        friends_attending = {}
+        recommended_ids = []
+
         if 'user_id' in session:
             user_id = session['user_id']
-            # Remember: we are querying the 'password' column based on your schema!
+            
+            # 1. Fetch user's tracked events
             rows = conn.execute('SELECT event_id FROM Selected_Event WHERE password = ?', (str(user_id),)).fetchall()
             interested_ids = [row['event_id'] for row in rows]
             
+            # 2. Fetch allies' events
+            attending_query = '''
+                SELECT se.event_id, u.name
+                FROM Selected_Event se
+                JOIN User u ON se.password = CAST(u.id AS TEXT)
+                JOIN friendreqs f ON (
+                    (f.sendinguser = ? AND f.recievinguser = u.id) OR
+                    (f.recievinguser = ? AND f.sendinguser = u.id)
+                )
+                WHERE f.accepted_rejected_waiting = 'accepted'
+            '''
+            attending_rows = conn.execute(attending_query, (user_id, user_id)).fetchall()
+            
+            for row in attending_rows:
+                eid = row['event_id']
+                if eid not in friends_attending:
+                    friends_attending[eid] = []
+                if row['name'] not in friends_attending[eid]:
+                    friends_attending[eid].append(row['name'])
+
+            # 3. --- GEMINI AI RECOMMENDATION ENGINE ---
+            # Only run the AI if the user has some history or friends to base recommendations on
+            if interested_ids or friends_attending:
+                # Prepare data for the AI to read
+                user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
+                all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
+                
+                prompt = f"""
+                You are a recommendation engine. Analyze the following data to recommend 2 upcoming events the user might like.
+                - User is already attending these events: {user_history_names}
+                - User's friends are attending these event IDs: {friends_attending}
+                - All available events: {all_events_data}
+                
+                Based on what the user and their friends like, return ONLY a valid, raw JSON array of the 2 most recommended event IDs that the user is NOT already attending.
+                Example output: [2, 5]
+                Do not include any markdown, backticks, or other text.
+                """
+                
+                try:
+                    # Establish uplink to Gemini
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = model.generate_content(prompt)
+                    
+                    # Clean up the response in case the AI added markdown block formatting
+                    clean_text = response.text.strip().strip('`').replace('json\n', '')
+                    recommended_ids = json.loads(clean_text)
+                except Exception as e:
+                    print(f"RobCo AI Uplink Failure: {e}")
+                    recommended_ids = []
+
         conn.close()
         
-        # 3. Transmit both the events and the user's tracking list to the template
-        return render_template('calendar.html.jinja', events=events, interested_ids=interested_ids)
+        # Transmit all data, including AI recommendations, to the terminal
+        return render_template('calendar.html.jinja', 
+                               events=events, 
+                               interested_ids=interested_ids, 
+                               friends_attending=friends_attending,
+                               recommended_ids=recommended_ids)
     
     @app.route('/upload', methods=['GET', 'POST'])
     def upload():
@@ -299,7 +361,7 @@ def create_app():
             # 5. Redirect to the profile page
             return redirect(url_for('profile'))
         else:
-            return "Invalid email or password.", 401
+            return render_template('signinsignup.html.jinja', error="[AUTHORIZATION FAILED: INVALID CREDENTIALS]")
 
     # --- NEW ROUTE TO CLEAR THE COOKIE ---
     @app.route('/logout')

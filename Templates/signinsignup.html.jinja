@@ -134,6 +134,12 @@
                         <input type="password" id="login_password" name="password" required>
                     </div>
 
+                    {% if error %}
+                        <div style="color: #ff3333; border: 1px dashed #ff3333; padding: 0.5rem; margin-bottom: 1rem; text-align: center; text-shadow: 0 0 5px #ff3333;">
+                            {{ error }}
+                        </div>
+                    {% endif %}
+
                     <button type="submit">Sign In</button>
                 </form>
             </section>

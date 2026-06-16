@@ -29,6 +29,12 @@
                 <div class="post-header">
                     <h3>{{ event['name'] }}</h3>
 
+                    {% if event['event_id'] in recommended_ids %}
+                        <div style="background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; padding: 0.3rem; text-align: center; font-size: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 2px;">
+                            [ OVERSEER AI RECOMMENDATION ]
+                        </div>
+                    {% endif %}
+
                     <span class="badge {% if not event['house_points'] %}off{% endif %}">
                         {% if event['house_points'] %}
                             [+ HOUSE POINTS]
@@ -67,6 +73,20 @@
                             <p style="font-size: 0.8rem; color: var(--primary-dim); text-align: center;">[ LOG IN TO TRACK EVENTS ]</p>
                         {% endif %}
                     </div>
+                    {% if session.get('user_id') %}
+                        <div style="margin-top: 1rem; font-size: 0.8rem; border-top: 1px dashed var(--primary-dim); padding-top: 0.5rem;">
+                            {% if friends_attending.get(event['event_id']) %}
+                                <p style="color: var(--primary-color); margin-bottom: 0;">
+                                    > ALLIES DEPLOYING: 
+                                    {% for friend in friends_attending[event['event_id']] %}
+                                        <strong>{{ friend }}</strong>{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </p>
+                            {% else %}
+                                <p style="color: var(--primary-dim); margin-bottom: 0;">> NO KNOWN ALLIES TRACKING THIS CONTRACT.</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
 
                 </div>
 
