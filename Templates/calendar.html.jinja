@@ -1,58 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Events Feed</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta charset="UTF-8">
+    <title>Events Feed - RobCo Terminal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
 
-<!-- Top Navbar -->
-<div class="navbar">
-  <h2>Events</h2>
-</div>
+    <nav class="navbar">
+        <div class="logo">My Website</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/calendar">Events</a></li>
+            <li><a href="/profile">Profile</a></li>
+        </ul>
+    </nav>
 
-<!-- Feed -->
-<div class="feed">
+    <main class="container">
+        <h2>[EVENT FEED // UPLINK SECURED]</h2>
+        
+        <div class="feed">
+            {% for event in events %}
+            <div class="post">
 
-  {% for event in events %}
-  <div class="post">
+                <div class="post-header">
+                    <h3>{{ event['name'] }}</h3>
 
-    <!-- Post Header -->
-    <div class="post-header">
-      <h3>{{ event['name'] }}</h3>
+                    <span class="badge {% if not event['house_points'] %}off{% endif %}">
+                        {% if event['house_points'] %}
+                            [+ HOUSE POINTS]
+                        {% else %}
+                            [- NO POINTS]
+                        {% endif %}
+                    </span>
+                </div>
 
-      <span class="badge {% if not event['house_points'] %}off{% endif %}">
-        {% if event['house_points'] %}
-          House Points
-        {% else %}
-          No House Points
-        {% endif %}
-      </span>
-    </div>
+                {% if event['image'] %}
+                    <img src="{{ url_for('static', filename='uploads/' + event['image']) }}" class="post-image">
+                {% else %}
+                    <div class="post-image placeholder">NO VISUAL DATA</div>
+                {% endif %}
 
-    <!-- Image -->
-    {% if event['image'] %}
-      <img 
-        src="{{ url_for('static', filename='uploads/' + event['image']) }}" 
-        class="post-image"
-      >
-    {% else %}
-      <div class="post-image placeholder"></div>
-    {% endif %}
+                <div class="post-body">
+                    <p class="time">
+                        DATE: {{ event['event_date'] }} <br>
+                        TIME: {{ event['event_time'] }}
+                    </p>
+                </div>
 
-    <!-- Body -->
-    <div class="post-body">
-      <p class="time">
-        📅 {{ event['event_date'] }} • ⏰ {{ event['event_time'] }}
-      </p>
-    </div>
-
-  </div>
-  {% endfor %}
-
-</div>
+            </div>
+            {% else %}
+                <p>[NO EVENTS FOUND IN DATABANKS]</p>
+            {% endfor %}
+        </div>
+    </main>
 
 </body>
 </html>

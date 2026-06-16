@@ -17,11 +17,13 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Ensures directories and the User table exist before the app runs."""
+    """Ensures directories and the tables exist before the app runs."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     
     conn = get_db_connection()
+    
+    # Create User Table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS User (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,6 +33,19 @@ def init_db():
             profile_image TEXT NOT NULL
         )
     ''')
+    
+    # Create Event Table (Matching your provided schema)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS Event (
+            event_id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            house_points INTEGER NOT NULL DEFAULT 0,
+            event_date TEXT NOT NULL,
+            event_time TEXT NOT NULL,
+            image TEXT
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -54,22 +69,26 @@ def create_app():
         # to decide whether to show the forms or a "Welcome [Name]" message.
         return render_template('signinsignup.html.jinja')
 
-    @app.route('/calendar')
-    def calendar():
-        return render_template('calendar.html.jinja')
-
     # Placeholder routes for your navbar to prevent 500 errors
     @app.route('/home')
     def home():
         return "Home Page Coming Soon!"
 
-    @app.route('/events')
-    def events():
+    # Ensure this route matches the href="/calendar" in your navbar
+    @app.route('/calendar')
+    def calendar():
+        # 1. Establish secure connection to the database
         conn = get_db_connection()
-        events = conn.execute('SELECT * FROM Event ORDER BY event_date DESC').fetchall()
+        
+        # 2. Query the Event table, sorting by date and time
+        # This returns a list of row objects that Jinja can read like dictionaries
+        events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
+        
+        # 3. Terminate connection
         conn.close()
-
-        return render_template('feed.html', events=events)
+        
+        # 4. Transmit live data to the terminal interface
+        return render_template('calendar.html.jinja', events=events)
 
     @app.route('/signup', methods=['POST'])
     def signup():

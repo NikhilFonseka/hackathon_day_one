@@ -253,3 +253,68 @@ img {
   filter: sepia(100%) hue-rotate(5deg) saturate(400%) brightness(0.9);
   opacity: 0.85;
 }
+
+/* 13. Event Feed Grid Layout */
+.feed {
+  display: grid;
+  /* Automatically fits as many 250px tiles as possible in a row */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Individual Event Tile */
+.post {
+  border: 1px solid var(--primary-dim);
+  padding: 1.2rem;
+  background: var(--input-bg);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.post:hover {
+  box-shadow: 0 0 15px rgba(255, 182, 66, 0.2);
+  border-color: var(--primary-color);
+}
+
+.post-header h3 {
+  font-size: 1.1rem;
+  border-bottom: none;
+  margin-bottom: 0.5rem;
+}
+
+/* Status Badge */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px dashed var(--primary-color);
+  display: inline-block;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+.badge.off {
+  border-color: var(--primary-dim);
+  color: var(--primary-dim);
+}
+
+/* Placeholder for Missing Images */
+.post-image.placeholder {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--primary-dim);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  color: var(--primary-dim);
+  text-align: center;
+}
+
+/* Tile Text Adjustments */
+.post-body p {
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
