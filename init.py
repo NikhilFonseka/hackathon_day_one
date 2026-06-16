@@ -4,13 +4,17 @@ from werkzeug.utils import secure_filename
 import sqlite3
 import os
 from datetime import datetime
-import google.generativeai as genai
-import json
 import os
+import json
+from dotenv import load_dotenv
+from groq import Groq
 
-# Configure the AI uplink (Replace with your actual Gemini API Key)
-# In a real wasteland, you'd hide this in an environment variable!
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+# 1. Load the hidden secrets from your .env file
+load_dotenv()
+
+# 2. Initialize the Groq terminal uplink
+# It automatically hunts for the GROQ_API_KEY in your .env file
+client = Groq()
 
 # Set up paths for the database and image uploads
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -189,10 +193,8 @@ def create_app():
                 if row['name'] not in friends_attending[eid]:
                     friends_attending[eid].append(row['name'])
 
-            # 3. --- GEMINI AI RECOMMENDATION ENGINE ---
-            # Only run the AI if the user has some history or friends to base recommendations on
+            # 3. --- GROQ AI RECOMMENDATION ENGINE ---
             if interested_ids or friends_attending:
-                # Prepare data for the AI to read
                 user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
                 all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
                 
@@ -204,19 +206,31 @@ def create_app():
                 
                 Based on what the user and their friends like, return ONLY a valid, raw JSON array of the 2 most recommended event IDs that the user is NOT already attending.
                 Example output: [2, 5]
-                Do not include any markdown, backticks, or other text.
                 """
                 
                 try:
-                    # Establish uplink to Gemini
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    response = model.generate_content(prompt)
+                    # Establish uplink to Groq using Llama 3
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You output ONLY raw JSON arrays. Do not include markdown, backticks, or any conversational text."
+                            },
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        model="llama3-8b-8192",
+                        temperature=0.2, # Low temperature keeps the AI focused on formatting correctly
+                    )
                     
-                    # Clean up the response in case the AI added markdown block formatting
-                    clean_text = response.text.strip().strip('`').replace('json\n', '')
+                    # Clean the datastream and convert to Python list
+                    clean_text = chat_completion.choices[0].message.content.strip().strip('`').replace('json\n', '')
                     recommended_ids = json.loads(clean_text)
+                    
                 except Exception as e:
-                    print(f"RobCo AI Uplink Failure: {e}")
+                    print(f"RobCo Groq Uplink Failure: {e}")
                     recommended_ids = []
 
         conn.close()
