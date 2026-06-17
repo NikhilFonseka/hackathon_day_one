@@ -31,7 +31,13 @@
 
                     {% if event['event_id'] in recommended_ids %}
                         <div style="background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; padding: 0.3rem; text-align: center; font-size: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 2px;">
-                            [ OVERSEER AI RECOMMENDATION ]
+                            [ OVERSEER RECOMMENDATION ]
+                        </div>
+                    {% endif %}
+
+                    {% if event['event_id'] in wildcard_ids %}
+                        <div style="background-color: transparent; color: var(--primary-color); border: 1px dashed var(--primary-color); font-weight: bold; padding: 0.3rem; text-align: center; font-size: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 2px;">
+                            [ WILDCARD DIRECTIVE: EXPAND YOUR NETWORK ]
                         </div>
                     {% endif %}
 

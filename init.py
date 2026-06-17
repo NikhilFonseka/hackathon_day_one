@@ -13,8 +13,7 @@ from groq import Groq
 load_dotenv()
 
 # 2. Initialize the Groq terminal uplink
-# It automatically hunts for the GROQ_API_KEY in your .env file
-client = Groq()
+client = Groq(api_key="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")
 
 # Set up paths for the database and image uploads
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -193,54 +192,77 @@ def create_app():
                 if row['name'] not in friends_attending[eid]:
                     friends_attending[eid].append(row['name'])
 
-            # 3. --- GROQ AI RECOMMENDATION ENGINE ---
+            # 3. --- GROQ AI RECOMMENDATION ENGINE (WILDCARD PROTOCOL WITH ROBUST PARSING) ---
+            wildcard_ids = []
+            
             if interested_ids or friends_attending:
                 user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
                 all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
                 
                 prompt = f"""
-                You are a recommendation engine. Analyze the following data to recommend 2 upcoming events the user might like.
-                - User is already attending these events: {user_history_names}
-                - User's friends are attending these event IDs: {friends_attending}
+                You are a community-building AI. Analyze the data to recommend exactly 4 upcoming events for the user.
+                - User is currently attending: {user_history_names}
+                - User's friends are attending: {friends_attending}
                 - All available events: {all_events_data}
                 
-                Based on what the user and their friends like, return ONLY a valid, raw JSON array of the 2 most recommended event IDs that the user is NOT already attending.
-                Example output: [2, 5]
+                Rules:
+                1. Pick 2 events that perfectly align with what the user or their friends already like.
+                2. Pick 2 "off-kilter" wildcard events that are completely different from their usual style to encourage them to break out of their clique.
+                3. Do NOT recommend any events the user is already attending.
+                
+                Return ONLY a valid, raw JSON object with two keys: "recommended" (array of 2 IDs) and "wildcard" (array of 2 IDs).
+                Example output format: {{"recommended": [1, 5], "wildcard": [3, 8]}}
                 """
                 
                 try:
-                    # Establish uplink to Groq using Llama 3
                     chat_completion = client.chat.completions.create(
                         messages=[
                             {
                                 "role": "system",
-                                "content": "You output ONLY raw JSON arrays. Do not include markdown, backticks, or any conversational text."
+                                "content": "You output ONLY raw JSON objects. Do not write markdown, backticks, or conversational text. Start your response with '{' and end it with '}'."
                             },
                             {
                                 "role": "user",
                                 "content": prompt
                             }
                         ],
-                        model="llama3-8b-8192",
-                        temperature=0.2, # Low temperature keeps the AI focused on formatting correctly
+                        model="openai/gpt-oss-20b",
+                        temperature=0.3,
                     )
                     
-                    # Clean the datastream and convert to Python list
-                    clean_text = chat_completion.choices[0].message.content.strip().strip('`').replace('json\n', '')
-                    recommended_ids = json.loads(clean_text)
+                    # Grab raw output from the AI
+                    raw_content = chat_completion.choices[0].message.content.strip()
+                    
+                    # Robust Parsing: Use regex to extract everything between the first { and the last }
+                    import re
+                    json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+                    
+                    if json_match:
+                        clean_text = json_match.group(0)
+                    else:
+                        clean_text = raw_content
+                    
+                    # Parse the safely extracted JSON object
+                    ai_data = json.loads(clean_text)
+                    
+                    # Safely extract the two separate arrays
+                    recommended_ids = ai_data.get("recommended", [])
+                    wildcard_ids = ai_data.get("wildcard", [])
                     
                 except Exception as e:
                     print(f"RobCo Groq Uplink Failure: {e}")
                     recommended_ids = []
+                    wildcard_ids = []
 
         conn.close()
         
-        # Transmit all data, including AI recommendations, to the terminal
+        # Transmit the new wildcard_ids to the terminal
         return render_template('calendar.html.jinja', 
                                events=events, 
                                interested_ids=interested_ids, 
                                friends_attending=friends_attending,
-                               recommended_ids=recommended_ids)
+                               recommended_ids=recommended_ids,
+                               wildcard_ids=wildcard_ids)
     
     @app.route('/upload', methods=['GET', 'POST'])
     def upload():
