@@ -20,8 +20,9 @@ DB_PATH = os.path.join(BASE_DIR, 'Database', 'database.db')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 
 def get_db_connection():
-    """Helper function to open a connection to the SQLite database."""
-    conn = sqlite3.connect(DB_PATH)
+    """Helper function to open a connection to the SQLite database with timeout handling."""
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute('PRAGMA journal_mode=WAL;')
     conn.row_factory = sqlite3.Row  # Allows us to access columns by name
     return conn
 
