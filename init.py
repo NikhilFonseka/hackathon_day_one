@@ -26,13 +26,13 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Ensures directories and the tables exist before the app runs."""
+    """Ensures directories and all four tables exist before the app runs."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     
     conn = get_db_connection()
     
-    # Create User Table
+    # 1. Create User Table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS User (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,15 +43,37 @@ def init_db():
         )
     ''')
     
-    # Create Event Table
+    # 2. Create Event Table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS Event (
-            event_id INTEGER PRIMARY KEY,
+            event_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             house_points INTEGER NOT NULL DEFAULT 0,
             event_date TEXT NOT NULL,
             event_time TEXT NOT NULL,
             image TEXT
+        )
+    ''')
+
+    # 3. Create Selected_Event Table
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS Selected_Event (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id INTEGER NOT NULL,
+            password TEXT NOT NULL,
+            FOREIGN KEY(event_id) REFERENCES Event(event_id)
+        )
+    ''')
+
+    # 4. Create friendreqs Table
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS friendreqs (
+            interactionid INTEGER PRIMARY KEY AUTOINCREMENT,
+            sendinguser INTEGER NOT NULL,
+            recievinguser INTEGER NOT NULL,
+            accepted_rejected_waiting TEXT NOT NULL DEFAULT 'waiting',
+            FOREIGN KEY(sendinguser) REFERENCES User(id),
+            FOREIGN KEY(recievinguser) REFERENCES User(id)
         )
     ''')
     
@@ -149,7 +171,7 @@ def create_app():
         conn = get_db_connection()
         events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
         
-        # --- FIXED PATH: Defined at top level so logged-out traffic never errors ---
+        # Fallback values tracking arrays
         interested_ids = []
         friends_attending = {}
         recommended_ids = []
