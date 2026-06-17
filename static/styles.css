@@ -1,4 +1,6 @@
-/* 1. Base Reset & Fallout Variables */
+/* =========================================================
+   1. Base Reset & Custom Properties
+   ========================================================= */
 * {
   margin: 0;
   padding: 0;
@@ -6,63 +8,172 @@
 }
 
 :root {
-  /* Premium Mojave Amber */
-  --primary-color: #ffb642;       
-  --primary-hover: #ffcf75;       
-  --primary-dim: rgba(255, 182, 66, 0.35);
-  --bg-color: #160f05;            
-  --card-bg: #1f1406;             
-  --input-bg: #0d0803;            
-  --font-stack: 'Lucida Console', 'Courier New', Courier, monospace;
+  /* Core brand colors — red, blue, white & black only */
+  --red-700: #B71C1C;
+  --red-600: #D32F2F;
+  --red-500: #EF5350;
+
+  --blue-700: #1565C0;
+  --blue-600: #1976D2;
+  --blue-500: #42A5F5;
+
+  --white: #FFFFFF;
+  --black: #1A1A1A;
+  --gray-700: #4D4D4D;
+  --gray-500: #6B6B6B;
+  --gray-300: #D6D6D6;
+  --gray-100: #F2F2F2;
+
+  /* Legacy aliases — kept so anything referencing the old names still works */
+  --primary-red: var(--red-600);
+  --primary-red-hover: var(--red-700);
+  --secondary-blue: var(--blue-600);
+  --secondary-blue-hover: var(--blue-700);
+  --text-main: var(--black);
+  --text-muted: var(--gray-500);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 36px rgba(21, 50, 130, 0.18);
+  --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+
+  /* Typography */
+  --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* 2. Global Terminal & CRT Screen FX */
+/* =========================================================
+   2. Global Styling & Living Aurora Background
+   ========================================================= */
 body {
   font-family: var(--font-stack);
-  color: var(--primary-color);
-  background-color: var(--bg-color);
+  color: var(--text-main);
+  background-color: var(--gray-100);
+  /* Fine film-grain texture (desaturated, so it stays inside the palette)
+     laid over the base gradient via blend mode for a tactile glass surface. */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, var(--white) 0%, var(--gray-100) 50%, #E8F2FC 100%);
+  background-blend-mode: overlay, normal;
+  background-size: 180px 180px, cover;
+  background-position: 0 0, center;
+  background-repeat: repeat, no-repeat;
+  background-attachment: fixed, fixed;
+  min-height: 100vh;
   line-height: 1.6;
-  padding: 2rem 1rem;
   position: relative;
   overflow-x: hidden;
-  /* Ambient CRT green/amber text-shadow glow */
-  text-shadow: 0 0 4px rgba(255, 182, 66, 0.6);
-  animation: crt-flicker 0.15s infinite;
 }
 
-/* CRT Scanline Overlay Effect */
-body::before {
-  content: " ";
-  display: block;
+/* Four soft red & blue light-leak glows, slowly drifting and breathing */
+body::before,
+body::after,
+html::before,
+html::after {
+  content: "";
   position: fixed;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  z-index: 99999;
-  background-size: 100% 4px, 3px 100%;
-  pointer-events: none; /* Allows clicking through the scanlines */
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  z-index: -1;
+  pointer-events: none;
 }
 
-/* 3. Navigation Bar (OS Menu Module) */
+body::before {
+  top: -12%;
+  left: -10%;
+  width: 46vw;
+  height: 46vw;
+  max-width: 560px;
+  max-height: 560px;
+  filter: blur(130px);
+  background: var(--red-500);
+  opacity: 0.16;
+  animation: drift-a 22s ease-in-out infinite;
+}
+
+body::after {
+  bottom: -14%;
+  right: -10%;
+  width: 46vw;
+  height: 46vw;
+  max-width: 560px;
+  max-height: 560px;
+  filter: blur(130px);
+  background: var(--blue-500);
+  opacity: 0.18;
+  animation: drift-b 26s ease-in-out infinite;
+}
+
+html::before {
+  top: 55%;
+  left: 70%;
+  width: 32vw;
+  height: 32vw;
+  max-width: 420px;
+  max-height: 420px;
+  filter: blur(110px);
+  background: var(--red-600);
+  opacity: 0.1;
+  animation: drift-b 30s ease-in-out infinite;
+}
+
+html::after {
+  top: 65%;
+  left: 4%;
+  width: 28vw;
+  height: 28vw;
+  max-width: 360px;
+  max-height: 360px;
+  filter: blur(110px);
+  background: var(--blue-600);
+  opacity: 0.1;
+  animation: drift-a 34s ease-in-out infinite;
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4%, 6%) scale(1.08); }
+}
+
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-5%, -4%) scale(1.05); }
+}
+
+/* =========================================================
+   3. Navigation Bar
+   ========================================================= */
 .navbar {
-  max-width: 900px;
-  margin: 0 auto 2rem auto;
-  padding: 1rem;
-  border-bottom: 2px dashed var(--primary-color);
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 4px 20px rgba(21, 50, 130, 0.06);
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .logo {
-  font-size: 1.3rem;
-  font-weight: bold;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background-image: linear-gradient(90deg, var(--red-600), var(--blue-600), var(--red-600));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: logo-shimmer 7s ease-in-out infinite;
 }
 
-.logo::before {
-  content: "► ";
+@keyframes logo-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 
 .nav-links {
@@ -72,251 +183,110 @@ body::before {
 }
 
 .nav-links a {
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 0.2rem 0.5rem;
+  position: relative;
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--blue-600);
+  padding-bottom: 4px;
+  transition: color 0.2s ease;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--red-600), var(--blue-600));
+  transition: width 0.25s ease;
 }
 
 .nav-links a:hover {
-  background-color: var(--primary-color);
-  color: var(--bg-color);
-  text-shadow: none;
+  color: var(--red-600);
 }
 
-/* 4. V.A.T.S. Style Bracket Containers */
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* =========================================================
+   4. Glass Containers & Layout
+   ========================================================= */
 .container, main {
-  max-width: 800px;
-  margin: 0 auto 3rem auto;
-  background: var(--card-bg);
-  padding: 3rem 2.5rem;
+  max-width: 900px;
+  margin: 3rem auto;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 3rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow), var(--glass-sheen);
   position: relative;
-  border: 1px solid var(--primary-dim);
-  box-shadow: inset 0 0 30px rgba(255, 182, 66, 0.1);
-}
-
-/* Heavy target brackets on corners using pseudo-elements */
-.container::before, main::before,
-.container::after, main::after {
-  content: "";
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-color: var(--primary-color);
-  border-style: solid;
-  pointer-events: none;
+  overflow: hidden;
 }
 
 .container::before, main::before {
-  top: -2px; left: -2px;
-  border-width: 4px 0 0 4px; /* Top Left */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--red-600), var(--blue-600));
 }
 
-.container::after, main::after {
-  bottom: -2px; right: -2px;
-  border-width: 0 4px 4px 0; /* Bottom Right */
-}
-
-/* 5. Headings & Interface Elements */
+/* =========================================================
+   5. Headings, Dividers & Text
+   ========================================================= */
 h1, h2, h3 {
-  color: var(--primary-color);
+  color: var(--red-600);
   margin-bottom: 1.5rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: 1.5rem;
+  font-weight: 700;
 }
+
+h1 { font-size: 2.2rem; }
+h2 { font-size: 1.8rem; }
+h3 { font-size: 1.3rem; color: var(--text-main); }
 
 h2::before {
-  content: "> ";
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 1em;
+  margin-right: 0.6rem;
+  vertical-align: -0.1em;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--red-600), var(--blue-600));
 }
 
 hr {
   border: 0;
-  height: 1px;
-  background: dashed var(--primary-color);
-  border-top: 1px dashed var(--primary-color);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--red-500), var(--blue-500), transparent);
   margin: 2.5rem 0;
+  opacity: 0.6;
 }
 
 p {
   margin-bottom: 1.5rem;
-  letter-spacing: 1px;
+  color: var(--text-main);
 }
 
-/* 6. Form Terminals */
+/* =========================================================
+   6. Forms & Inputs
+   ========================================================= */
 form div {
   margin-bottom: 1.5rem;
 }
 
 label {
   display: block;
-  text-transform: uppercase;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   margin-bottom: 0.5rem;
-  letter-spacing: 2px;
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="file"] {
-  width: 100%;
-  padding: 0.8rem;
-  background-color: var(--input-bg);
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-  font-family: var(--font-stack);
-  font-size: 1rem;
-  outline: none;
-}
-
-input:focus {
-  background-color: #261908;
-  box-shadow: 0 0 10px rgba(255, 182, 66, 0.4);
-}
-
-/* 7. Action Execution Buttons */
-button, .btn {
-  display: inline-block;
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  padding: 0.75rem 2.5rem;
-  font-family: var(--font-stack);
-  font-size: 1rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  cursor: pointer;
-  letter-spacing: 2px;
-  position: relative;
-}
-
-button:hover, .btn:hover {
-  background-color: var(--primary-color);
-  color: var(--bg-color);
-  box-shadow: 0 0 15px var(--primary-color);
-  text-shadow: none;
-}
-
-button:active, .btn:active {
-  transform: translateY(1px);
-}
-
-/* 8. Target Lock Profile Picture Frame */
-img {
-  border: 2px solid var(--primary-color) !important;
-  border-radius: 0 !important; /* Absolute squares only in the wasteland */
-  background-color: var(--input-bg);
-  padding: 5px;
-  box-shadow: 0 0 15px rgba(255, 182, 66, 0.4);
-}
-
-/* 9. System Footer Module */
-.footer {
-  max-width: 900px;
-  margin: 3rem auto 0 auto;
-  padding: 1.5rem;
-  border-top: 2px dashed var(--primary-dim);
-  text-align: center;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-/* 10. Hardware Keyframes (Animations) */
-@keyframes crt-flicker {
-  0% { opacity: 0.995; }
-  50% { opacity: 1; }
-  100% { opacity: 0.992; }
-}
-
-/* 11. Responsive Terminals */
-@media (max-width: 600px) {
-  .container, main {
-    padding: 2rem 1.5rem;
-  }
-  .navbar {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-}
-
-/* 12. Vault-Tec Mascot Processing Module */
-.vault-mascot {
-  max-width: 150px;
-  height: auto;
-  display: inline-block;
-  margin: 0 auto;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  /* Monochromatic Amber Terminal Filter */
-  filter: sepia(100%) hue-rotate(5deg) saturate(400%) brightness(0.9);
-  opacity: 0.85;
-}
-
-/* 13. Event Feed Grid Layout */
-.feed {
-  display: grid;
-  /* Automatically fits as many 250px tiles as possible in a row */
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 2rem;
-}
-
-/* Individual Event Tile */
-.post {
-  border: 1px solid var(--primary-dim);
-  padding: 1.2rem;
-  background: var(--input-bg);
-  transition: transform 0.2s, box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
-}
-
-.post:hover {
-  box-shadow: 0 0 15px rgba(255, 182, 66, 0.2);
-  border-color: var(--primary-color);
-}
-
-.post-header h3 {
-  font-size: 1.1rem;
-  border-bottom: none;
-  margin-bottom: 0.5rem;
-}
-
-/* Status Badge */
-.badge {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border: 1px dashed var(--primary-color);
-  display: inline-block;
-  margin-bottom: 1rem;
-  letter-spacing: 1px;
-}
-
-.badge.off {
-  border-color: var(--primary-dim);
-  color: var(--primary-dim);
-}
-
-/* Placeholder for Missing Images */
-.post-image.placeholder {
-  height: 140px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed var(--primary-dim);
-  font-size: 0.85rem;
-  letter-spacing: 2px;
-  margin-bottom: 1rem;
-  color: var(--primary-dim);
-  text-align: center;
-}
-
-/* Tile Text Adjustments */
-.post-body p {
-  font-size: 0.85rem;
-  margin-bottom: 0;
+  color: var(--text-main);
 }
 
 input[type="text"],
@@ -327,42 +297,386 @@ input[type="date"],
 input[type="time"],
 select {
   width: 100%;
-  padding: 0.8rem;
-  background-color: var(--input-bg);
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
+  padding: 0.8rem 1rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  color: var(--text-main);
   font-family: var(--font-stack);
   font-size: 1rem;
+  transition: all 0.25s ease;
   outline: none;
-  /* Ensure dropdown arrows match terminal style on modern browsers */
-  appearance: none; 
 }
 
-/* Custom dropdown arrow for select elements */
-select {
-  background-image: linear-gradient(45deg, transparent 50%, var(--primary-color) 50%), 
-                    linear-gradient(135deg, var(--primary-color) 50%, transparent 50%);
-  background-position: calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
+input:focus, select:focus {
+  background-color: rgba(255, 255, 255, 0.97);
+  border-color: var(--blue-600);
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.22);
+  animation: input-focus-pop 0.5s ease-out;
+}
+
+input::placeholder {
+  color: var(--gray-500);
+  opacity: 0.8;
+}
+
+@keyframes input-focus-pop {
+  0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.35); }
+  100% { box-shadow: 0 0 0 6px rgba(25, 118, 210, 0); }
+}
+
+/* =========================================================
+   7. Action Buttons
+   ========================================================= */
+button, .btn {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--red-600), var(--red-700));
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 2rem;
+  font-family: var(--font-stack);
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(211, 47, 47, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-/* Ensure calendar/clock icons inside date/time pickers turn amber */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(72%) sepia(85%) saturate(394%) hue-rotate(344deg) brightness(101%) contrast(102%);
-    cursor: pointer;
+button::before, .btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.28);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
 }
 
-/* 14. Network Allies List */
-ul {
-  list-style-type: none;
-  padding-left: 0;
+button:hover::before, .btn:hover::before {
+  left: 130%;
 }
 
-li {
+button:hover, .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(211, 47, 47, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+button:active, .btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+button:focus-visible, .btn:focus-visible {
+  outline: 3px solid var(--blue-500);
+  outline-offset: 2px;
+}
+
+/* Secondary Button Style */
+button.secondary, .btn-secondary {
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+  box-shadow: 0 4px 14px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+button.secondary:hover, .btn-secondary:hover {
+  box-shadow: 0 8px 18px rgba(25, 118, 210, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* =========================================================
+   8. Images & Avatars
+   ========================================================= */
+img {
+  border-radius: 12px;
+  max-width: 100%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+img[alt="Profile Picture"] {
+  border: 3px solid var(--white);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    0 -6px 24px -6px var(--red-500),
+    0 6px 24px -6px var(--blue-500);
+}
+
+/* =========================================================
+   9. Footer
+   ========================================================= */
+.footer {
+  text-align: center;
+  padding: 2rem;
+  margin-top: 3rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   10. Event Feed & Post Cards
+   ========================================================= */
+.feed {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.post {
+  position: relative;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(21, 50, 130, 0.07);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: card-enter 0.6s ease-out both;
+}
+
+.post:nth-child(1) { animation-delay: 0.05s; }
+.post:nth-child(2) { animation-delay: 0.1s; }
+.post:nth-child(3) { animation-delay: 0.15s; }
+.post:nth-child(4) { animation-delay: 0.2s; }
+.post:nth-child(5) { animation-delay: 0.25s; }
+.post:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.post::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(211, 47, 47, 0.05), rgba(25, 118, 210, 0.05));
+  pointer-events: none;
+}
+
+.post:hover {
+  transform: translateY(-6px) rotateX(1.5deg) rotateY(-1.5deg);
+  box-shadow: 0 16px 32px rgba(21, 50, 130, 0.12), 0 0 0 1px rgba(25, 118, 210, 0.18);
+}
+
+.post-header {
+  position: relative;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+}
+
+.post-header h3 {
+  color: var(--red-600);
   margin-bottom: 0.5rem;
-  color: var(--primary-color);
-  letter-spacing: 1px;
+}
+
+/* =========================================================
+   11. Badges
+   ========================================================= */
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  margin: 0 0.4rem 0.4rem 0;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge-red {
+  background: rgba(211, 47, 47, 0.1);
+  color: var(--red-700);
+  border: 1px solid rgba(211, 47, 47, 0.25);
+}
+
+.badge-blue {
+  background: rgba(25, 118, 210, 0.1);
+  color: var(--blue-700);
+  border: 1px solid rgba(25, 118, 210, 0.25);
+}
+
+.badge-neutral {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--gray-700);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* The calendar template sets badge colors inline (including an off-palette
+   amber and green), which normally beats any external CSS — !important is
+   needed here to pull them back onto the red/blue/white/black palette and
+   give them the glass + pulse treatment used everywhere else. */
+.badge {
+  color: var(--red-600) !important;
+}
+
+.badge.off {
+  color: var(--gray-500) !important;
+}
+
+.badge-recommended {
+  background: rgba(25, 118, 210, 0.12) !important;
+  color: var(--blue-700) !important;
+  border: 1px solid rgba(25, 118, 210, 0.3) !important;
+  backdrop-filter: blur(6px);
+  animation: badge-pulse-blue 2.6s ease-in-out infinite;
+}
+
+.badge-discovery {
+  background: rgba(211, 47, 47, 0.12) !important;
+  color: var(--red-700) !important;
+  border: 1px dashed rgba(211, 47, 47, 0.35) !important;
+  backdrop-filter: blur(6px);
+  animation: badge-pulse-red 2.6s ease-in-out infinite;
+}
+
+@keyframes badge-pulse-blue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(25, 118, 210, 0); }
+}
+
+@keyframes badge-pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(211, 47, 47, 0); }
+}
+
+/* =========================================================
+   12. Small Details
+   ========================================================= */
+::selection {
+  background: rgba(25, 118, 210, 0.22);
+  color: var(--black);
+}
+
+/* =========================================================
+   13. Custom Scrollbar
+   ========================================================= */
+html {
+  scroll-behavior: smooth;
+  scrollbar-color: var(--blue-600) var(--gray-100);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--red-600), var(--blue-600));
+  border-radius: 8px;
+  border: 2px solid var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--red-700), var(--blue-700));
+}
+
+/* =========================================================
+   14. Responsive Design
+   ========================================================= */
+@media (max-width: 768px) {
+  .container, main {
+    padding: 2rem 1.5rem;
+    margin: 1.5rem;
+    border-radius: 14px;
+  }
+
+  /* iOS Safari renders background-attachment: fixed unreliably, so let it scroll on small screens */
+  body {
+    background-attachment: scroll, scroll;
+  }
+
+  body::before, body::after,
+  html::before, html::after {
+    width: 70vw;
+    height: 70vw;
+    filter: blur(90px);
+  }
+
+  .navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .nav-links {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* =========================================================
+   15. Accessibility: Respect Reduced Motion
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Specifically for small friend cards in the profile section */
+.post.friend-card {
+    padding: 1rem;
+    text-align: center;
+    margin: 0;
+}
+
+/* Optional: If you want the grid to be tighter for friends than for posts */
+.friends-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Styling for individual friend boxes */
+.friend-card {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.8); /* Subtle glass border */
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+/* Add a subtle highlight border on hover */
+.friend-card:hover {
+    border-color: var(--blue-500);
+    transform: translateY(-3px);
+}
+
+/* Static friend card - no hover, no animation, distinct borders */
+.friend-display {
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* Explicitly override potential inherited animations */
+    animation: none !important;
+    transition: none !important;
+}
+
+.friend-display p {
+    margin: 0;
+    font-weight: 600;
+    color: var(--black);
 }
