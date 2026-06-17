@@ -2,57 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Upload Event - RobCo Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Event - Student Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
 
     <nav class="navbar">
-        <div class="logo">ROBCO OS v3.0</div>
+        <div class="logo">Student Portal</div>
 
         <ul class="nav-links">
-            <li><a href="/">HOME</a></li>
-            <li><a href="/calendar">EVENTS</a></li>
-            <li><a href="/upload">UPLOAD</a></li>
-            <li><a href="/profile">PROFILE</a></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/calendar">Events</a></li>
+            <li><a href="/upload">Upload</a></li>
+            <li><a href="/profile">Profile</a></li>
         </ul>
     </nav>
 
-    <main class="container">
-        <h2>[AUTHORIZE NEW EVENT UPLOAD]</h2>
+    <main class="container" style="max-width: 600px; margin: 0 auto; padding: 2rem;">
+        <h2 style="text-align: center; margin-bottom: 2rem; color: #333;">Create a New Event</h2>
         
-        <form action="/upload" method="POST" enctype="multipart/form-data">
+        <form action="/upload" method="POST" enctype="multipart/form-data" style="background-color: #fff; padding: 2.5rem; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             
-            <div>
-                <label for="event_name">Event Designation (Name):</label>
-                <input type="text" id="event_name" name="name" required>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="event_name" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555;">Event Name:</label>
+                <input type="text" id="event_name" name="name" required style="width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
             </div>
 
-            <div>
-                <label for="house_points">House Points Authorized?</label>
-                <select id="house_points" name="house_points">
-                    <option value="1">YES [+ POINTS]</option>
-                    <option value="0">NO [- NO POINTS]</option>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="house_points" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555;">Are House Points Awarded?</label>
+                <select id="house_points" name="house_points" style="width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background-color: #fff;">
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
                 </select>
             </div>
 
-            <div>
-                <label for="event_date">Log Date:</label>
-                <input type="date" id="event_date" name="event_date" required>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="event_date" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555;">Event Date:</label>
+                <input type="date" id="event_date" name="event_date" required style="width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
             </div>
 
-            <div>
-                <label for="event_time">Log Time:</label>
-                <input type="time" id="event_time" name="event_time" required>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="event_time" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555;">Event Time:</label>
+                <input type="time" id="event_time" name="event_time" required style="width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
             </div>
 
-            <div>
-                <label for="event_image">Attach Visual Data (Optional):</label>
-                <input type="file" id="event_image" name="image" accept="image/*">
+            <div style="margin-bottom: 2rem;">
+                <label for="event_image" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555;">Event Image (Optional):</label>
+                <input type="file" id="event_image" name="image" accept="image/*" style="width: 100%; padding: 0.5rem; box-sizing: border-box;">
             </div>
 
-            <button type="submit">TRANSMIT DATA</button>
+            <button type="submit" style="width: 100%; padding: 1rem; font-size: 1rem; font-weight: bold; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Submit Event
+            </button>
         </form>
     </main>
 

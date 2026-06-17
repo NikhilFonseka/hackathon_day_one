@@ -9,13 +9,13 @@
 <body>
 
     <nav class="navbar">
-        <div class="logo">ROBCO OS v3.0</div>
+        <div class="logo">Student Portal</div>
 
         <ul class="nav-links">
-            <li><a href="/">HOME</a></li>
-            <li><a href="/calendar">EVENTS</a></li>
-            <li><a href="/upload">UPLOAD</a></li>
-            <li><a href="/profile">PROFILE</a></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/calendar">Events</a></li>
+            <li><a href="/upload">Upload</a></li>
+            <li><a href="/profile">Profile</a></li>
         </ul>
     </nav>
     
@@ -35,86 +35,81 @@
                 <hr>
                 
                 <section style="text-align: left; margin-bottom: 2rem;">
-                    <h2>[ ESTABLISHED ALLIES ]</h2>
-                    <ul>
+                    <h2>My Friends</h2>
+                    <div class="friends-container">
                         {% for friend in friends %}
-                            <li>> {{ friend['name'] }} [STATUS: ONLINE]</li>
+                            <div class="friend-display">
+                                <p>{{ friend['name'] }}</p>
+                            </div>
                         {% else %}
-                            <li>[ NO ALLIES FOUND IN LOCAL NETWORK ]</li>
+                            <p style="color: var(--ink-muted);">You haven't added any friends yet.</p>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </section>
 
                 <section style="text-align: left; margin-bottom: 2rem;">
-                    <h2>[ PENDING UPLINK REQUESTS ]</h2>
+                    <h2>Pending Friend Requests</h2>
                     {% for req in pending_reqs %}
-                        <div style="border: 1px dashed var(--primary-dim); padding: 1rem; margin-bottom: 1rem;">
-                            <p>INCOMING TRANSMISSION FROM: <strong>{{ req['sender_name'] }}</strong></p>
+                        <div style="border: 1px solid #ccc; border-radius: 5px; padding: 1rem; margin-bottom: 1rem; background-color: #f9f9f9;">
+                            <p>Friend request from: <strong>{{ req['sender_name'] }}</strong></p>
                             
                             <form action="/handle_request/{{ req['interactionid'] }}" method="POST" style="display: inline-block;">
                                 <input type="hidden" name="action" value="accepted">
-                                <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.8rem;">[ ACCEPT ]</button>
+                                <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">Accept</button>
                             </form>
                             
                             <form action="/handle_request/{{ req['interactionid'] }}" method="POST" style="display: inline-block;">
                                 <input type="hidden" name="action" value="rejected">
-                                <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.8rem; border-color: #8B0000; color: #8B0000;">[ REJECT ]</button>
+                                <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.9rem; border-color: #dc3545; color: #dc3545; background: none; cursor: pointer;">Reject</button>
                             </form>
                         </div>
                     {% else %}
-                        <p>[ NO INCOMING TRANSMISSIONS ]</p>
+                        <p style="color: gray;">No pending friend requests.</p>
                     {% endfor %}
                 </section>
 
                 <section style="text-align: left; margin-bottom: 2rem;">
-                    <h2>[ INITIATE NEW CONNECTION ]</h2>
+                    <h2>Add a Friend</h2>
                     <form action="/send_request" method="POST">
-                        <div>
-                            <label for="friend_email">TARGET COURIER EMAIL:</label>
-                            <input type="email" id="friend_email" name="friend_email" required placeholder="user@robco.net">
+                        <div style="margin-bottom: 1rem;">
+                            <label for="friend_email">Student Email:</label>
+                            <input type="email" id="friend_email" name="friend_email" required placeholder="student@school.edu" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                         </div>
-                        <button type="submit" style="width: 100%;">[ TRANSMIT FRIEND REQUEST ]</button>
+                        <button type="submit" style="width: 100%; padding: 0.75rem; cursor: pointer;">Send Friend Request</button>
                     </form>
                 </section>
                 
                 <hr>
-                <a href="/logout"><button>Log Out</button></a>
+                <a href="/logout"><button style="padding: 0.5rem 1rem; cursor: pointer;">Log Out</button></a>
             </section>
 
         {% else %}
-
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <img src="https://upload.wikimedia.org/wikipedia/en/6/61/Vault_Boy_artwork.png" 
-                     class="vault-mascot" 
-                     alt="Vault-Tec Approved">
-                <p style="font-size: 0.8rem; letter-spacing: 2px; margin-top: 0.5rem;">[VAULT-TEC OS V3.0.1 - READY]</p>
-            </div>
             
             <section>
                 <h2>Student Sign Up</h2>
                 <form action="/signup" method="POST" enctype="multipart/form-data">
                     
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <label for="reg_name">Full Name:</label>
-                        <input type="text" id="reg_name" name="name" required>
+                        <input type="text" id="reg_name" name="name" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                     </div>
 
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <label for="reg_email">Email:</label>
-                        <input type="email" id="reg_email" name="email" required>
+                        <input type="email" id="reg_email" name="email" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                     </div>
 
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <label for="reg_password">Password:</label>
-                        <input type="password" id="reg_password" name="password" required>
+                        <input type="password" id="reg_password" name="password" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                     </div>
 
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <label for="reg_image">Profile Image:</label>
-                        <input type="file" id="reg_image" name="profile_image" accept="image/*" required>
+                        <input type="file" id="reg_image" name="profile_image" accept="image/*" required style="margin-top: 0.5rem;">
                     </div>
 
-                    <button type="submit">Sign Up</button>
+                    <button type="submit" style="width: 100%; padding: 0.75rem; cursor: pointer;">Sign Up</button>
                 </form>
             </section>
 
@@ -124,28 +119,27 @@
                 <h2>Student Sign In</h2>
                 <form action="/signin" method="POST">
                     
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <label for="login_email">Email:</label>
-                        <input type="email" id="login_email" name="email" required>
+                        <input type="email" id="login_email" name="email" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                     </div>
 
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <label for="login_password">Password:</label>
-                        <input type="password" id="login_password" name="password" required>
+                        <input type="password" id="login_password" name="password" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                     </div>
 
                     {% if error %}
-                        <div style="color: #ff3333; border: 1px dashed #ff3333; padding: 0.5rem; margin-bottom: 1rem; text-align: center; text-shadow: 0 0 5px #ff3333;">
+                        <div style="color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem; text-align: center;">
                             {{ error }}
                         </div>
                     {% endif %}
 
-                    <button type="submit">Sign In</button>
+                    <button type="submit" style="width: 100%; padding: 0.75rem; cursor: pointer;">Sign In</button>
                 </form>
-            </section>
-            
+            </section>  
+        
         {% endif %}
-    </main>
 
 </body>
 </html>

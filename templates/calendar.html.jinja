@@ -2,94 +2,98 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Events Feed - RobCo Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Events - Student Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
 
     <nav class="navbar">
-        <div class="logo">ROBCO OS v3.0</div>
+        <div class="logo">Student Portal</div>
 
         <ul class="nav-links">
-            <li><a href="/">HOME</a></li>
-            <li><a href="/calendar">EVENTS</a></li>
-            <li><a href="/upload">UPLOAD</a></li>
-            <li><a href="/profile">PROFILE</a></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/calendar">Events</a></li>
+            <li><a href="/upload">Upload</a></li>
+            <li><a href="/profile">Profile</a></li>
         </ul>
     </nav>
 
     <main class="container">
-        <h2>[EVENT FEED // UPLINK SECURED]</h2>
+        <h2 style="text-align: center; margin-bottom: 2rem;">Upcoming Campus Events</h2>
         
         <div class="feed">
             {% for event in events %}
-            <div class="post">
+            <div class="post" style="border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 2rem; background-color: #fff;">
 
-                <div class="post-header">
-                    <h3>{{ event['name'] }}</h3>
+                <div class="post-header" style="padding: 1rem;">
+                    <h3 style="margin-top: 0;">{{ event['name'] }}</h3>
 
                     {% if event['event_id'] in recommended_ids %}
-                        <div style="background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; padding: 0.3rem; text-align: center; font-size: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 2px;">
-                            [ OVERSEER RECOMMENDATION ]
+                        <div class="badge-recommended" style="background-color: #e3f2fd; color: #0056b3; font-weight: bold; padding: 0.4rem; text-align: center; font-size: 0.85rem; margin-bottom: 0.5rem; border-radius: 4px;">
+                            Recommended for You
                         </div>
                     {% endif %}
 
                     {% if event['event_id'] in wildcard_ids %}
-                        <div style="background-color: transparent; color: var(--primary-color); border: 1px dashed var(--primary-color); font-weight: bold; padding: 0.3rem; text-align: center; font-size: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 2px;">
-                            [ WILDCARD DIRECTIVE: EXPAND YOUR NETWORK ]
+                        <div class="badge-discovery" style="background-color: #fff3cd; color: #856404; border: 1px dashed #ffe8a1; font-weight: bold; padding: 0.4rem; text-align: center; font-size: 0.85rem; margin-bottom: 0.5rem; border-radius: 4px;">
+                            Try Something New
                         </div>
                     {% endif %}
 
-                    <span class="badge {% if not event['house_points'] %}off{% endif %}">
+                    <span class="badge {% if not event['house_points'] %}off{% endif %}" style="font-size: 0.85rem; font-weight: bold; color: {% if event['house_points'] %}#28a745{% else %}#6c757d{% endif %};">
                         {% if event['house_points'] %}
-                            [+ HOUSE POINTS]
+                            + House Points
                         {% else %}
-                            [- NO POINTS]
+                            No House Points
                         {% endif %}
                     </span>
                 </div>
 
                 {% if event['image'] %}
-                    <img src="{{ url_for('static', filename='uploads/' + event['image']) }}" class="post-image">
+                    <img src="{{ url_for('static', filename='uploads/' + event['image']) }}" class="post-image" alt="Event Image" style="width: 100%; max-height: 300px; object-fit: cover;">
                 {% else %}
-                    <div class="post-image placeholder">NO VISUAL DATA</div>
+                    <div class="post-image placeholder" style="width: 100%; height: 200px; background-color: #f4f4f4; display: flex; align-items: center; justify-content: center; color: #aaa;">
+                        No Image Available
+                    </div>
                 {% endif %}
 
-                <div class="post-body">
-                    <p class="time">
-                        DATE: {{ event['event_date'] }} <br>
-                        TIME: {{ event['event_time'] }}
+                <div class="post-body" style="padding: 1rem;">
+                    <p class="time" style="color: #555; margin-bottom: 1rem;">
+                        <strong>Date:</strong> {{ event['event_date'] }} <br>
+                        <strong>Time:</strong> {{ event['event_time'] }}
                     </p>
                     
                     <div style="margin-top: 1rem;">
                         {% if session.get('user_id') %}
                             {% if event['event_id'] in interested_ids %}
-                                <button disabled style="width: 100%; padding: 0.5rem; font-size: 0.85rem; border-color: var(--primary-dim); color: var(--primary-dim); cursor: not-allowed;">
-                                    [ ALREADY TRACKING ]
+                                <button disabled style="width: 100%; padding: 0.6rem; font-size: 0.9rem; background-color: #e9ecef; border: 1px solid #ced4da; color: #6c757d; border-radius: 4px; cursor: not-allowed; font-weight: bold;">
+                                    Attending
                                 </button>
                             {% else %}
                                 <form action="/interested/{{ event['event_id'] }}" method="POST">
-                                    <button type="submit" style="width: 100%; padding: 0.5rem; font-size: 0.85rem;">
-                                        [ MARK INTERESTED ]
+                                    <button type="submit" style="width: 100%; padding: 0.6rem; font-size: 0.9rem; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                                        I'm Interested
                                     </button>
                                 </form>
                             {% endif %}
                         {% else %}
-                            <p style="font-size: 0.8rem; color: var(--primary-dim); text-align: center;">[ LOG IN TO TRACK EVENTS ]</p>
+                            <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">Log in to RSVP to events.</p>
                         {% endif %}
                     </div>
+                    
                     {% if session.get('user_id') %}
-                        <div style="margin-top: 1rem; font-size: 0.8rem; border-top: 1px dashed var(--primary-dim); padding-top: 0.5rem;">
+                        <div style="margin-top: 1.5rem; font-size: 0.9rem; border-top: 1px solid #eaeaea; padding-top: 1rem;">
                             {% if friends_attending.get(event['event_id']) %}
-                                <p style="color: var(--primary-color); margin-bottom: 0;">
-                                    > ALLIES DEPLOYING: 
+                                <p style="color: #333; margin-bottom: 0;">
+                                    <strong>Friends Attending:</strong> 
                                     {% for friend in friends_attending[event['event_id']] %}
-                                        <strong>{{ friend }}</strong>{% if not loop.last %}, {% endif %}
+                                        {{ friend }}{% if not loop.last %}, {% endif %}
                                     {% endfor %}
                                 </p>
                             {% else %}
-                                <p style="color: var(--primary-dim); margin-bottom: 0;">> NO KNOWN ALLIES TRACKING THIS CONTRACT.</p>
+                                <p style="color: #6c757d; margin-bottom: 0;">None of your friends are attending yet.</p>
                             {% endif %}
                         </div>
                     {% endif %}
@@ -98,7 +102,7 @@
 
             </div>
             {% else %}
-                <p>[NO EVENTS FOUND IN DATABANKS]</p>
+                <p style="text-align: center; color: #666;">No upcoming events found. Check back later!</p>
             {% endfor %}
         </div>
     </main>

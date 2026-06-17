@@ -21,8 +21,12 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 
 def get_db_connection():
     """Helper function to open a connection to the SQLite database with timeout handling."""
+    # timeout=30 tells SQLite to wait up to 30 seconds for a lock to clear before throwing an error
     conn = sqlite3.connect(DB_PATH, timeout=30)
+    
+    # Enable WAL mode for better concurrent read/write handling across multiple concurrent traffic threads
     conn.execute('PRAGMA journal_mode=WAL;')
+    
     conn.row_factory = sqlite3.Row  # Allows us to access columns by name
     return conn
 
@@ -172,7 +176,7 @@ def create_app():
         conn = get_db_connection()
         events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
         
-        # Fallback values tracking arrays
+        # Fallback tracking variables (available outside login scopes)
         interested_ids = []
         friends_attending = {}
         recommended_ids = []
@@ -211,18 +215,17 @@ def create_app():
                 all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
                 
                 prompt = f"""
-                You are a community-building AI. Analyze the data to recommend exactly 4 upcoming events for the user.
-                - User is currently attending: {user_history_names}
-                - User's friends are attending: {friends_attending}
-                - All available events: {all_events_data}
-                
+                You are an academic event recommendation engine. Analyze the student's data and recommend 4 upcoming events.
+                - Student's current interests: {user_history_names}
+                - Student's friends are attending: {friends_attending}
+                - Available events: {all_events_data}
+
                 Rules:
-                1. Pick 2 events that perfectly align with what the user or their friends already like.
-                2. Pick 2 "off-kilter" wildcard events that are completely different from their usual style to encourage them to break out of their clique.
-                3. Do NOT recommend any events the user is already attending.
-                
-                Return ONLY a valid, raw JSON object with two keys: "recommended" (array of 2 IDs) and "wildcard" (array of 2 IDs).
-                Example output format: {{"recommended": [1, 5], "wildcard": [3, 8]}}
+                1. Recommend 2 events that align with the student's current interests and friend network.
+                2. Recommend 2 "discovery" events that are outside the student's typical interests to encourage campus social integration.
+                3. Do not recommend events the student is already attending.
+
+                Return a JSON object: {{"recommended": [id1, id2], "wildcard": [id3, id4]}}
                 """
                 
                 try:
