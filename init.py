@@ -4,7 +4,6 @@ from werkzeug.utils import secure_filename
 import sqlite3
 import os
 from datetime import datetime
-import os
 import json
 from dotenv import load_dotenv
 from groq import Groq
@@ -44,7 +43,7 @@ def init_db():
         )
     ''')
     
-    # Create Event Table (Matching your provided schema)
+    # Create Event Table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS Event (
             event_id INTEGER PRIMARY KEY,
@@ -75,12 +74,9 @@ def create_app():
 
     @app.route('/profile')
     def profile():
-        # 1. If the user is NOT signed in, just show the login/signup forms safely
         if 'user_id' not in session:
-            # We don't query the database, we just serve the raw template
             return render_template('signinsignup.html.jinja')
 
-        # 2. If the user IS signed in, proceed with fetching their network data
         user_id = session['user_id']
         conn = get_db_connection()
 
@@ -102,10 +98,8 @@ def create_app():
         
         conn.close()
 
-        # Render the profile interface with the datalink info
         return render_template('signinsignup.html.jinja', pending_reqs=pending_reqs, friends=friends)
 
-    
     @app.route('/send_request', methods=['POST'])
     def send_request():
         if 'user_id' not in session:
@@ -115,10 +109,8 @@ def create_app():
         sender_id = session['user_id']
 
         conn = get_db_connection()
-        # Find the target user by their email
         target_user = conn.execute('SELECT id FROM User WHERE email = ?', (target_email,)).fetchone()
 
-        # Ensure target exists and user isn't adding themselves
         if target_user and target_user['id'] != sender_id:
             conn.execute('''
                 INSERT INTO friendreqs (sendinguser, recievinguser, accepted_rejected_waiting)
@@ -129,17 +121,15 @@ def create_app():
         conn.close()
         return redirect('/profile')
 
-
     @app.route('/handle_request/<int:interactionid>', methods=['POST'])
     def handle_request(interactionid):
         if 'user_id' not in session:
             return redirect('/')
             
-        action = request.form.get('action') # Will be 'accepted' or 'rejected'
+        action = request.form.get('action')
 
         if action in ['accepted', 'rejected']:
             conn = get_db_connection()
-            # Verify the current user is the one receiving the request before updating!
             conn.execute('''
                 UPDATE friendreqs
                 SET accepted_rejected_waiting = ?
@@ -150,20 +140,20 @@ def create_app():
 
         return redirect('/profile')
 
-    # Placeholder routes for your navbar to prevent 500 errors
     @app.route('/home')
     def home():
         return "Home Page Coming Soon!"
 
-    # Ensure this route matches the href="/calendar" in your navbar
     @app.route('/calendar')
     def calendar():
         conn = get_db_connection()
         events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
         
+        # --- FIXED PATH: Defined at top level so logged-out traffic never errors ---
         interested_ids = []
         friends_attending = {}
         recommended_ids = []
+        wildcard_ids = []
 
         if 'user_id' in session:
             user_id = session['user_id']
@@ -192,9 +182,7 @@ def create_app():
                 if row['name'] not in friends_attending[eid]:
                     friends_attending[eid].append(row['name'])
 
-            # 3. --- GROQ AI RECOMMENDATION ENGINE (WILDCARD PROTOCOL WITH ROBUST PARSING) ---
-            wildcard_ids = []
-            
+            # 3. --- GROQ AI RECOMMENDATION ENGINE ---
             if interested_ids or friends_attending:
                 user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
                 all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
@@ -230,22 +218,13 @@ def create_app():
                         temperature=0.3,
                     )
                     
-                    # Grab raw output from the AI
                     raw_content = chat_completion.choices[0].message.content.strip()
                     
-                    # Robust Parsing: Use regex to extract everything between the first { and the last }
                     import re
                     json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+                    clean_text = json_match.group(0) if json_match else raw_content
                     
-                    if json_match:
-                        clean_text = json_match.group(0)
-                    else:
-                        clean_text = raw_content
-                    
-                    # Parse the safely extracted JSON object
                     ai_data = json.loads(clean_text)
-                    
-                    # Safely extract the two separate arrays
                     recommended_ids = ai_data.get("recommended", [])
                     wildcard_ids = ai_data.get("wildcard", [])
                     
@@ -256,7 +235,6 @@ def create_app():
 
         conn.close()
         
-        # Transmit the new wildcard_ids to the terminal
         return render_template('calendar.html.jinja', 
                                events=events, 
                                interested_ids=interested_ids, 
@@ -266,26 +244,19 @@ def create_app():
     
     @app.route('/upload', methods=['GET', 'POST'])
     def upload():
-        # (Optional) Restrict access to logged-in users
-        # if not session.get('user_name'):
-        #     return redirect(url_for('profile'))
-
         if request.method == 'POST':
-            # 1. Grab data from the terminal form
             name = request.form.get('name')
             house_points = int(request.form.get('house_points', 0))
             event_date = request.form.get('event_date')
             event_time = request.form.get('event_time')
             image_file = request.files.get('image')
 
-            # 2. Handle optional image upload
             filename = None
             if image_file and image_file.filename != '':
                 filename = secure_filename(image_file.filename)
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 image_file.save(file_path)
 
-            # 3. Inject into the Event databank
             conn = get_db_connection()
             conn.execute('''
                 INSERT INTO Event (name, house_points, event_date, event_time, image) 
@@ -294,51 +265,36 @@ def create_app():
             conn.commit()
             conn.close()
 
-            # 4. Route back to the feed to see the new tile
             return redirect(url_for('calendar'))
 
-        # If it's a GET request, just show the form
         return render_template('upload.html.jinja')
     
     @app.route('/interested/<int:event_id>', methods=['POST'])
     def mark_interested(event_id):
-        # 1. Check if the user is actually logged in
         if 'user_id' not in session:
-            # If not logged in, you could redirect to a login page. 
-            # For now, we'll just send them back to the calendar.
             return redirect(url_for('calendar'))
         
         user_id = session['user_id']
-        
-        # 2. Connect to the databanks
         conn = get_db_connection()
-        
-        # 3. Log the interaction into Selected_Event
-        # NOTE: We are inserting the user_id into your 'password' column based on your schema!
         conn.execute('''
             INSERT INTO Selected_Event (event_id, password)
             VALUES (?, ?)
         ''', (event_id, str(user_id)))
-        
         conn.commit()
         conn.close()
         
-        # 4. Refresh the terminal feed
         return redirect(url_for('calendar'))
 
     @app.route('/signup', methods=['POST'])
     def signup():
-        # 1. Grab data from the HTML form
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
         image_file = request.files.get('profile_image')
 
-        # Basic validation
         if not (name and email and password and image_file):
             return "Missing required fields.", 400
 
-        # 2. Secure the filename and save the uploaded image
         filename = secure_filename(image_file.filename)
         if filename:
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -346,10 +302,8 @@ def create_app():
         else:
             return "Invalid file.", 400
 
-        # 3. Hash the password
         hashed_password = generate_password_hash(password)
 
-        # 4. Save to the database
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -359,13 +313,10 @@ def create_app():
             )
             conn.commit()
             
-            # 5. Save the new user to the session cookie
             session['user_id'] = cursor.lastrowid
             session['user_name'] = name
-            
             conn.close()
             
-            # 6. Redirect to the profile page
             return redirect(url_for('profile'))
         
         except sqlite3.IntegrityError:
@@ -375,31 +326,23 @@ def create_app():
 
     @app.route('/signin', methods=['POST'])
     def signin():
-        # 1. Grab data from the HTML form
         email = request.form.get('email')
         password = request.form.get('password')
 
         if not (email and password):
             return "Missing required fields.", 400
 
-        # 2. Look up the user in the database
         conn = get_db_connection()
         user = conn.execute('SELECT * FROM User WHERE email = ?', (email,)).fetchone()
         conn.close()
 
-        # 3. Verify the user exists AND the password matches the hash
         if user and check_password_hash(user['password'], password):
-            
-            # 4. Save the user to the session cookie
             session['user_id'] = user['id']
             session['user_name'] = user['name']
-            
-            # 5. Redirect to the profile page
             return redirect(url_for('profile'))
         else:
             return render_template('signinsignup.html.jinja', error="[AUTHORIZATION FAILED: INVALID CREDENTIALS]")
 
-    # --- NEW ROUTE TO CLEAR THE COOKIE ---
     @app.route('/logout')
     def logout():
         session.clear()
