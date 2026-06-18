@@ -73,7 +73,7 @@
                     <form action="/send_request" method="POST">
                         <div style="margin-bottom: 1rem;">
                             <label for="friend_email">Student Email:</label>
-                            <input type="email" id="friend_email" name="friend_email" required placeholder="student@school.edu" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                            <input type="email" id="friend_email" name="friend_email" required placeholder="student@rosmini.school.nz" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                         </div>
                         <button type="submit" style="width: 100%; padding: 0.75rem; cursor: pointer;">Send Friend Request</button>
                     </form>
@@ -96,7 +96,7 @@
 
                     <div style="margin-bottom: 1rem;">
                         <label for="reg_email">Email:</label>
-                        <input type="email" id="reg_email" name="email" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                        <input type="email" id="reg_email" name="email" required placeholder="yourname@rosmini.school.nz" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
                     </div>
 
                     <div style="margin-bottom: 1rem;">
@@ -105,9 +105,15 @@
                     </div>
 
                     <div style="margin-bottom: 1rem;">
-                        <label for="reg_image">Profile Image:</label>
-                        <input type="file" id="reg_image" name="profile_image" accept="image/*" required style="margin-top: 0.5rem;">
+                        <label for="reg_image">Profile Image (Optional):</label>
+                        <input type="file" id="reg_image" name="profile_image" accept="image/*" style="margin-top: 0.5rem;">
                     </div>
+
+                    {% if signup_error %}
+                        <div style="color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem; text-align: center;">
+                            {{ signup_error }}
+                        </div>
+                    {% endif %}
 
                     <button type="submit" style="width: 100%; padding: 0.75rem; cursor: pointer;">Sign Up</button>
                 </form>
@@ -140,6 +146,7 @@
             </section>  
         
         {% endif %}
+    </main>
 
 </body>
 </html>
