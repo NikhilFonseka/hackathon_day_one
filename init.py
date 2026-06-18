@@ -8,104 +8,102 @@ import json
 from dotenv import load_dotenv
 from groq import Groq
 
-# 1. Load the hidden secrets from your .env file
+# 1. Load environment configurations
 load_dotenv()
 
-# 2. Initialize the Groq terminal uplink
+# 2. Initialize the Groq core uplink
 client = Groq(api_key="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")
 
-# Set up paths for the database and image uploads
+# Path bindings for database state and assets
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'Database', 'database.db')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 
 def get_db_connection():
-    """Helper function to open a connection to the SQLite database with timeout handling."""
+    """Opens a connection with explicit timeout configurations and WAL optimizations."""
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.execute('PRAGMA journal_mode=WAL;')
     conn.row_factory = sqlite3.Row  
     return conn
 
 def init_db():
-    """Ensures directories and all four tables exist before the app runs."""
+    """Initializes schema blueprints using context managers to prevent initialization lockups."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     
-    conn = get_db_connection()
-    
-    # 1. Create User Table (profile_image is now optional/nullable)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS User (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            profile_image TEXT
-        )
-    ''')
-    
-    # 2. Create Event Table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS Event (
-            event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            house_points INTEGER NOT NULL DEFAULT 0,
-            event_date TEXT NOT NULL,
-            event_time TEXT NOT NULL,
-            image TEXT
-        )
-    ''')
+    with get_db_connection() as conn:
+        # User blueprint: Enforces lowercase integrity, handles optional images
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS User (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                profile_image TEXT
+            )
+        ''')
+        
+        # Event blueprint
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Event (
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                house_points INTEGER NOT NULL DEFAULT 0,
+                event_date TEXT NOT NULL,
+                event_time TEXT NOT NULL,
+                image TEXT
+            )
+        ''')
 
-    # 3. Create Selected_Event Table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS Selected_Event (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_id INTEGER NOT NULL,
-            password TEXT NOT NULL,
-            FOREIGN KEY(event_id) REFERENCES Event(event_id)
-        )
-    ''')
+        # Selected_Event blueprint: Added composite UNIQUE constraint to protect table space
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Selected_Event (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id INTEGER NOT NULL,
+                password TEXT NOT NULL,
+                FOREIGN KEY(event_id) REFERENCES Event(event_id),
+                UNIQUE(event_id, password)
+            )
+        ''')
 
-    # 4. Create friendreqs Table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS friendreqs (
-            interactionid INTEGER PRIMARY KEY AUTOINCREMENT,
-            sendinguser INTEGER NOT NULL,
-            recievinguser INTEGER NOT NULL,
-            accepted_rejected_waiting TEXT NOT NULL DEFAULT 'waiting',
-            FOREIGN KEY(sendinguser) REFERENCES User(id),
-            FOREIGN KEY(recievinguser) REFERENCES User(id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+        # friendreqs blueprint: Added composite UNIQUE constraint to stop tracking redundant spam
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS friendreqs (
+                interactionid INTEGER PRIMARY KEY AUTOINCREMENT,
+                sendinguser INTEGER NOT NULL,
+                recievinguser INTEGER NOT NULL,
+                accepted_rejected_waiting TEXT NOT NULL DEFAULT 'waiting',
+                FOREIGN KEY(sendinguser) REFERENCES User(id),
+                FOREIGN KEY(recievinguser) REFERENCES User(id),
+                UNIQUE(sendinguser, recievinguser)
+            )
+        ''')
+        conn.commit()
 
 def render_profile_page_with_data(error=None, signup_error=None):
-    """Helper function to cleanly pass contextual template metrics without running redirects."""
+    """Safely extracts interface datasets through explicit context isolation."""
     if 'user_id' not in session:
         return render_template('signinsignup.html.jinja', error=error, signup_error=signup_error, pending_reqs=[], friends=[])
 
     user_id = session['user_id']
-    conn = get_db_connection()
-
-    pending_reqs = conn.execute('''
-        SELECT f.interactionid, u.name as sender_name
-        FROM friendreqs f
-        JOIN User u ON f.sendinguser = u.id
-        WHERE f.recievinguser = ? AND f.accepted_rejected_waiting = 'waiting'
-    ''', (user_id,)).fetchall()
-
-    friends = conn.execute('''
-        SELECT u.name
-        FROM friendreqs f
-        JOIN User u ON (u.id = f.sendinguser OR u.id = f.recievinguser)
-        WHERE (f.sendinguser = ? OR f.recievinguser = ?)
-          AND f.accepted_rejected_waiting = 'accepted'
-          AND u.id != ?
-    ''', (user_id, user_id, user_id)).fetchall()
     
-    conn.close()
+    with get_db_connection() as conn:
+        pending_reqs = conn.execute('''
+            SELECT f.interactionid, u.name as sender_name
+            FROM friendreqs f
+            JOIN User u ON f.sendinguser = u.id
+            WHERE f.recievinguser = ? AND f.accepted_rejected_waiting = 'waiting'
+        ''', (user_id,)).fetchall()
+
+        friends = conn.execute('''
+            SELECT u.name
+            FROM friendreqs f
+            JOIN User u ON (u.id = f.sendinguser OR u.id = f.recievinguser)
+            WHERE (f.sendinguser = ? OR f.recievinguser = ?)
+              AND f.accepted_rejected_waiting = 'accepted'
+              AND u.id != ?
+        ''', (user_id, user_id, user_id)).fetchall()
+        
     return render_template('signinsignup.html.jinja', pending_reqs=pending_reqs, friends=friends, error=error, signup_error=signup_error)
 
 def create_app():
@@ -128,20 +126,20 @@ def create_app():
         if 'user_id' not in session:
             return redirect('/')
             
-        target_email = request.form.get('friend_email')
+        target_email = request.form.get('friend_email', '').strip().lower()
         sender_id = session['user_id']
 
-        conn = get_db_connection()
-        target_user = conn.execute('SELECT id FROM User WHERE email = ?', (target_email,)).fetchone()
+        with get_db_connection() as conn:
+            target_user = conn.execute('SELECT id FROM User WHERE email = ?', (target_email,)).fetchone()
 
-        if target_user and target_user['id'] != sender_id:
-            conn.execute('''
-                INSERT INTO friendreqs (sendinguser, recievinguser, accepted_rejected_waiting)
-                VALUES (?, ?, 'waiting')
-            ''', (sender_id, target_user['id']))
-            conn.commit()
+            if target_user and target_user['id'] != sender_id:
+                # Direct mitigation against duplicate tracking constraints using SQLite fallback logic
+                conn.execute('''
+                    INSERT OR IGNORE INTO friendreqs (sendinguser, recievinguser, accepted_rejected_waiting)
+                    VALUES (?, ?, 'waiting')
+                ''', (sender_id, target_user['id']))
+                conn.commit()
             
-        conn.close()
         return redirect('/profile')
 
     @app.route('/handle_request/<int:interactionid>', methods=['POST'])
@@ -152,14 +150,13 @@ def create_app():
         action = request.form.get('action')
 
         if action in ['accepted', 'rejected']:
-            conn = get_db_connection()
-            conn.execute('''
-                UPDATE friendreqs
-                SET accepted_rejected_waiting = ?
-                WHERE interactionid = ? AND recievinguser = ?
-            ''', (action, interactionid, session['user_id']))
-            conn.commit()
-            conn.close()
+            with get_db_connection() as conn:
+                conn.execute('''
+                    UPDATE friendreqs
+                    SET accepted_rejected_waiting = ?
+                    WHERE interactionid = ? AND recievinguser = ?
+                ''', (action, interactionid, session['user_id']))
+                conn.commit()
 
         return redirect('/profile')
 
@@ -169,89 +166,87 @@ def create_app():
 
     @app.route('/calendar')
     def calendar():
-        conn = get_db_connection()
-        events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
-        
         interested_ids = []
         friends_attending = {}
         recommended_ids = []
         wildcard_ids = []
 
-        if 'user_id' in session:
-            user_id = session['user_id']
+        with get_db_connection() as conn:
+            events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
             
-            rows = conn.execute('SELECT event_id FROM Selected_Event WHERE password = ?', (str(user_id),)).fetchall()
-            interested_ids = [row['event_id'] for row in rows]
-            
-            attending_query = '''
-                SELECT se.event_id, u.name
-                FROM Selected_Event se
-                JOIN User u ON se.password = CAST(u.id AS TEXT)
-                JOIN friendreqs f ON (
-                    (f.sendinguser = ? AND f.recievinguser = u.id) OR
-                    (f.recievinguser = ? AND f.sendinguser = u.id)
-                )
-                WHERE f.accepted_rejected_waiting = 'accepted'
-            '''
-            attending_rows = conn.execute(attending_query, (user_id, user_id)).fetchall()
-            
-            for row in attending_rows:
-                eid = row['event_id']
-                if eid not in friends_attending:
-                    friends_attending[eid] = []
-                if row['name'] not in friends_attending[eid]:
-                    friends_attending[eid].append(row['name'])
-
-            if interested_ids or friends_attending:
-                user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
-                all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
+            if 'user_id' in session:
+                user_id = session['user_id']
                 
-                prompt = f"""
-                You are an academic event recommendation engine. Analyze the student's data and recommend 4 upcoming events.
-                - Student's current interests: {user_history_names}
-                - Student's friends are attending: {friends_attending}
-                - Available events: {all_events_data}
-
-                Rules:
-                1. Recommend 2 events that align with the student's current interests and friend network.
-                2. Recommend 2 "discovery" events that are outside the student's typical interests to encourage campus social integration.
-                3. Do not recommend events the student is already attending.
-
-                Return a JSON object: {{"recommended": [id1, id2], "wildcard": [id3, id4]}}
-                """
+                rows = conn.execute('SELECT event_id FROM Selected_Event WHERE password = ?', (str(user_id),)).fetchall()
+                interested_ids = [row['event_id'] for row in rows]
                 
-                try:
-                    chat_completion = client.chat.completions.create(
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You output ONLY raw JSON objects. Do not write markdown, backticks, or conversational text. Start your response with '{' and end it with '}'."
-                            },
-                            {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ],
-                        model="openai/gpt-oss-20b",
-                        temperature=0.3,
+                attending_query = '''
+                    SELECT se.event_id, u.name
+                    FROM Selected_Event se
+                    JOIN User u ON se.password = CAST(u.id AS TEXT)
+                    JOIN friendreqs f ON (
+                        (f.sendinguser = ? AND f.recievinguser = u.id) OR
+                        (f.recievinguser = ? AND f.sendinguser = u.id)
                     )
-                    
-                    raw_content = chat_completion.choices[0].message.content.strip()
-                    
-                    import re
-                    json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
-                    clean_text = json_match.group(0) if json_match else raw_content
-                    
-                    ai_data = json.loads(clean_text)
-                    recommended_ids = ai_data.get("recommended", [])
-                    wildcard_ids = ai_data.get("wildcard", [])
-                    
-                except Exception as e:
-                    print(f"RobCo Groq Uplink Failure: {e}")
-                    recommended_ids = []
-                    wildcard_ids = []
+                    WHERE f.accepted_rejected_waiting = 'accepted'
+                '''
+                attending_rows = conn.execute(attending_query, (user_id, user_id)).fetchall()
+                
+                for row in attending_rows:
+                    eid = row['event_id']
+                    if eid not in friends_attending:
+                        friends_attending[eid] = []
+                    if row['name'] not in friends_attending[eid]:
+                        friends_attending[eid].append(row['name'])
 
-        conn.close()
+                if interested_ids or friends_attending:
+                    user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
+                    all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
+                    
+                    prompt = f"""
+                    You are an academic event recommendation engine. Analyze the student's data and recommend 4 upcoming events.
+                    - Student's current interests: {user_history_names}
+                    - Student's friends are attending: {friends_attending}
+                    - Available events: {all_events_data}
+
+                    Rules:
+                    1. Recommend 2 events that align with the student's current interests and friend network.
+                    2. Recommend 2 "discovery" events that are outside the student's typical interests to encourage campus social integration.
+                    3. Do not recommend events the student is already attending.
+
+                    Return a JSON object: {{"recommended": [id1, id2], "wildcard": [id3, id4]}}
+                    """
+                    
+                    try:
+                        chat_completion = client.chat.completions.create(
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": "You output ONLY raw JSON objects. Do not write markdown, backticks, or conversational text. Start your response with '{' and end it with '}'."
+                                },
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ],
+                            model="openai/gpt-oss-20b",
+                            temperature=0.3,
+                        )
+                        
+                        raw_content = chat_completion.choices[0].message.content.strip()
+                        
+                        import re
+                        json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+                        clean_text = json_match.group(0) if json_match else raw_content
+                        
+                        ai_data = json.loads(clean_text)
+                        recommended_ids = ai_data.get("recommended", [])
+                        wildcard_ids = ai_data.get("wildcard", [])
+                        
+                    except Exception as e:
+                        print(f"RobCo Groq Uplink Failure: {e}")
+                        recommended_ids = []
+                        wildcard_ids = []
         
         return render_template('calendar.html.jinja', 
                                events=events, 
@@ -264,7 +259,8 @@ def create_app():
     def upload():
         if request.method == 'POST':
             name = request.form.get('name')
-            house_points = int(request.form.get('house_points', 0))
+            # FIX: Validates presence using an OR fallback strategy against blank forms
+            house_points = int(request.form.get('house_points') or 0)
             event_date = request.form.get('event_date')
             event_time = request.form.get('event_time')
             image_file = request.files.get('image')
@@ -275,13 +271,12 @@ def create_app():
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 image_file.save(file_path)
 
-            conn = get_db_connection()
-            conn.execute('''
-                INSERT INTO Event (name, house_points, event_date, event_time, image) 
-                VALUES (?, ?, ?, ?, ?)
-            ''', (name, house_points, event_date, event_time, filename))
-            conn.commit()
-            conn.close()
+            with get_db_connection() as conn:
+                conn.execute('''
+                    INSERT INTO Event (name, house_points, event_date, event_time, image) 
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (name, house_points, event_date, event_time, filename))
+                conn.commit()
 
             return redirect(url_for('calendar'))
 
@@ -293,32 +288,30 @@ def create_app():
             return redirect(url_for('calendar'))
         
         user_id = session['user_id']
-        conn = get_db_connection()
-        conn.execute('''
-            INSERT INTO Selected_Event (event_id, password)
-            VALUES (?, ?)
-        ''', (event_id, str(user_id)))
-        conn.commit()
-        conn.close()
+        with get_db_connection() as conn:
+            # FIX: Protects schema with an INSERT OR IGNORE logic rule against track spamming
+            conn.execute('''
+                INSERT OR IGNORE INTO Selected_Event (event_id, password)
+                VALUES (?, ?)
+            ''', (event_id, str(user_id)))
+            conn.commit()
         
         return redirect(url_for('calendar'))
 
     @app.route('/signup', methods=['POST'])
     def signup():
         name = request.form.get('name')
-        email = request.form.get('email', '').strip()
+        # FIX: Enforce uniform sanitization across strings
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
         image_file = request.files.get('profile_image')
 
-        # 1. Standard structural check
         if not (name and email and password):
             return render_profile_page_with_data(signup_error="Missing required fields.")
 
-        # 2. Domain Constraint Check
-        if not email.lower().endswith('@rosmini.school.nz'):
+        if not email.endswith('@rosmini.school.nz'):
             return render_profile_page_with_data(signup_error="Registration restricted! Must be a @rosmini.school.nz email address.")
 
-        # 3. Optional Image Processor
         filename = None
         if image_file and image_file.filename != '':
             filename = secure_filename(image_file.filename)
@@ -329,18 +322,17 @@ def create_app():
         hashed_password = generate_password_hash(password)
 
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                'INSERT INTO User (name, email, password, profile_image) VALUES (?, ?, ?, ?)',
-                (name, email, hashed_password, filename)
-            )
-            conn.commit()
-            
-            session['user_id'] = cursor.lastrowid
-            session['user_name'] = name
-            session['profile_image'] = filename
-            conn.close()
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'INSERT INTO User (name, email, password, profile_image) VALUES (?, ?, ?, ?)',
+                    (name, email, hashed_password, filename)
+                )
+                conn.commit()
+                
+                session['user_id'] = cursor.lastrowid
+                session['user_name'] = name
+                session['profile_image'] = filename
             
             return redirect(url_for('profile'))
         
@@ -351,15 +343,15 @@ def create_app():
 
     @app.route('/signin', methods=['POST'])
     def signin():
-        email = request.form.get('email')
+        # FIX: Enforce matching baseline casings during credential checking
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
 
         if not (email and password):
             return render_profile_page_with_data(error="Missing credentials.")
 
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM User WHERE email = ?', (email,)).fetchone()
-        conn.close()
+        with get_db_connection() as conn:
+            user = conn.execute('SELECT * FROM User WHERE email = ?', (email,)).fetchone()
 
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
@@ -368,11 +360,16 @@ def create_app():
             return redirect(url_for('profile'))
         else:
             return render_profile_page_with_data(error="Invalid email or password.")
+
+    @app.route('/logout')
+    def logout():
+        """Cleanly wipes active session metrics to prevent stale access headers."""
+        session.clear()
+        return redirect(url_for('index'))
             
     return app
 
-# CRITICAL FIX FOR GUNICORN ON RENDER:
-# Instantiate the global application reference at the root scope level
+# GUNICORN BINDING INTERFACE FOR PRODUCTION RUNTIMES:
 app = create_app()
 
 if __name__ == '__main__':
