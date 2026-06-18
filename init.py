@@ -363,3 +363,17 @@ def create_app():
 
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
+            session['user_name'] = user['name']
+            session['profile_image'] = user['profile_image']
+            return redirect(url_for('profile'))
+        else:
+            return render_profile_page_with_data(error="Invalid email or password.")
+            
+    return app
+
+# CRITICAL FIX FOR GUNICORN ON RENDER:
+# Instantiate the global application reference at the root scope level
+app = create_app()
+
+if __name__ == '__main__':
+    app.run(debug=True)
