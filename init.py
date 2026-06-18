@@ -21,13 +21,9 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 
 def get_db_connection():
     """Helper function to open a connection to the SQLite database with timeout handling."""
-    # timeout=30 tells SQLite to wait up to 30 seconds for a lock to clear before throwing an error
     conn = sqlite3.connect(DB_PATH, timeout=30)
-    
-    # Enable WAL mode for better concurrent read/write handling across multiple concurrent traffic threads
     conn.execute('PRAGMA journal_mode=WAL;')
-    
-    conn.row_factory = sqlite3.Row  # Allows us to access columns by name
+    conn.row_factory = sqlite3.Row  
     return conn
 
 def init_db():
@@ -37,14 +33,14 @@ def init_db():
     
     conn = get_db_connection()
     
-    # 1. Create User Table
+    # 1. Create User Table (profile_image is now optional/nullable)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS User (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            profile_image TEXT NOT NULL
+            profile_image TEXT
         )
     ''')
     
@@ -85,14 +81,38 @@ def init_db():
     conn.commit()
     conn.close()
 
+def render_profile_page_with_data(error=None, signup_error=None):
+    """Helper function to cleanly pass contextual template metrics without running redirects."""
+    if 'user_id' not in session:
+        return render_template('signinsignup.html.jinja', error=error, signup_error=signup_error, pending_reqs=[], friends=[])
+
+    user_id = session['user_id']
+    conn = get_db_connection()
+
+    pending_reqs = conn.execute('''
+        SELECT f.interactionid, u.name as sender_name
+        FROM friendreqs f
+        JOIN User u ON f.sendinguser = u.id
+        WHERE f.recievinguser = ? AND f.accepted_rejected_waiting = 'waiting'
+    ''', (user_id,)).fetchall()
+
+    friends = conn.execute('''
+        SELECT u.name
+        FROM friendreqs f
+        JOIN User u ON (u.id = f.sendinguser OR u.id = f.recievinguser)
+        WHERE (f.sendinguser = ? OR f.recievinguser = ?)
+          AND f.accepted_rejected_waiting = 'accepted'
+          AND u.id != ?
+    ''', (user_id, user_id, user_id)).fetchall()
+    
+    conn.close()
+    return render_template('signinsignup.html.jinja', pending_reqs=pending_reqs, friends=friends, error=error, signup_error=signup_error)
+
 def create_app():
     app = Flask(__name__)
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-    
-    # REQUIRED: A secret key is needed to sign the cookies securely
     app.secret_key = 'super_secret_hackathon_key' 
     
-    # Initialize database when the app is created
     init_db()
 
     @app.route('/')
@@ -101,31 +121,7 @@ def create_app():
 
     @app.route('/profile')
     def profile():
-        if 'user_id' not in session:
-            return render_template('signinsignup.html.jinja')
-
-        user_id = session['user_id']
-        conn = get_db_connection()
-
-        pending_reqs = conn.execute('''
-            SELECT f.interactionid, u.name as sender_name
-            FROM friendreqs f
-            JOIN User u ON f.sendinguser = u.id
-            WHERE f.recievinguser = ? AND f.accepted_rejected_waiting = 'waiting'
-        ''', (user_id,)).fetchall()
-
-        friends = conn.execute('''
-            SELECT u.name
-            FROM friendreqs f
-            JOIN User u ON (u.id = f.sendinguser OR u.id = f.recievinguser)
-            WHERE (f.sendinguser = ? OR f.recievinguser = ?)
-              AND f.accepted_rejected_waiting = 'accepted'
-              AND u.id != ?
-        ''', (user_id, user_id, user_id)).fetchall()
-        
-        conn.close()
-
-        return render_template('signinsignup.html.jinja', pending_reqs=pending_reqs, friends=friends)
+        return render_profile_page_with_data()
 
     @app.route('/send_request', methods=['POST'])
     def send_request():
@@ -176,7 +172,6 @@ def create_app():
         conn = get_db_connection()
         events = conn.execute('SELECT * FROM Event ORDER BY event_date ASC, event_time ASC').fetchall()
         
-        # Fallback tracking variables (available outside login scopes)
         interested_ids = []
         friends_attending = {}
         recommended_ids = []
@@ -185,11 +180,9 @@ def create_app():
         if 'user_id' in session:
             user_id = session['user_id']
             
-            # 1. Fetch user's tracked events
             rows = conn.execute('SELECT event_id FROM Selected_Event WHERE password = ?', (str(user_id),)).fetchall()
             interested_ids = [row['event_id'] for row in rows]
             
-            # 2. Fetch allies' events
             attending_query = '''
                 SELECT se.event_id, u.name
                 FROM Selected_Event se
@@ -209,7 +202,6 @@ def create_app():
                 if row['name'] not in friends_attending[eid]:
                     friends_attending[eid].append(row['name'])
 
-            # 3. --- GROQ AI RECOMMENDATION ENGINE ---
             if interested_ids or friends_attending:
                 user_history_names = [e['name'] for e in events if e['event_id'] in interested_ids]
                 all_events_data = [{'id': e['event_id'], 'name': e['name']} for e in events]
@@ -314,19 +306,25 @@ def create_app():
     @app.route('/signup', methods=['POST'])
     def signup():
         name = request.form.get('name')
-        email = request.form.get('email')
+        email = request.form.get('email', '').strip()
         password = request.form.get('password')
         image_file = request.files.get('profile_image')
 
-        if not (name and email and password and image_file):
-            return "Missing required fields.", 400
+        # 1. Standard structural check
+        if not (name and email and password):
+            return render_profile_page_with_data(signup_error="Missing required fields.")
 
-        filename = secure_filename(image_file.filename)
-        if filename:
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image_file.save(file_path)
-        else:
-            return "Invalid file.", 400
+        # 2. Domain Constraint Check
+        if not email.lower().endswith('@rosmini.school.nz'):
+            return render_profile_page_with_data(signup_error="Registration restricted! Must be a @rosmini.school.nz email address.")
+
+        # 3. Optional Image Processor
+        filename = None
+        if image_file and image_file.filename != '':
+            filename = secure_filename(image_file.filename)
+            if filename:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                image_file.save(file_path)
 
         hashed_password = generate_password_hash(password)
 
@@ -341,14 +339,15 @@ def create_app():
             
             session['user_id'] = cursor.lastrowid
             session['user_name'] = name
+            session['profile_image'] = filename
             conn.close()
             
             return redirect(url_for('profile'))
         
         except sqlite3.IntegrityError:
-            return "An account with that email already exists.", 400
+            return render_profile_page_with_data(signup_error="An account with that email already exists.")
         except Exception as e:
-            return f"An error occurred: {e}", 500
+            return render_profile_page_with_data(signup_error=f"An infrastructure error occurred: {e}")
 
     @app.route('/signin', methods=['POST'])
     def signin():
@@ -356,7 +355,7 @@ def create_app():
         password = request.form.get('password')
 
         if not (email and password):
-            return "Missing required fields.", 400
+            return render_profile_page_with_data(error="Missing credentials.")
 
         conn = get_db_connection()
         user = conn.execute('SELECT * FROM User WHERE email = ?', (email,)).fetchone()
@@ -364,18 +363,3 @@ def create_app():
 
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
-            session['user_name'] = user['name']
-            return redirect(url_for('profile'))
-        else:
-            return render_template('signinsignup.html.jinja', error="[AUTHORIZATION FAILED: INVALID CREDENTIALS]")
-
-    @app.route('/logout')
-    def logout():
-        session.clear()
-        return redirect(url_for('profile'))
-
-    return app
-
-if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True)
